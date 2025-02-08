@@ -1,6 +1,3 @@
-# Team-11-Senior-Project
-
-
 # Automated Package Classifier with Robotic Arm Manipulation for Efficient Sorting and Handling
 
 ## Overview
@@ -18,23 +15,15 @@ The **Automated Package Classifier** is a system that integrates **computer visi
 
 ## Project Structure
 ```
-📦 Helper files # Utility scripts, helper functions, or configuration files shared across the project
-
-📦 Kinova Starter
-    ┣ Ignore other Starter Files
-    
-    ┣ 📦 Automated-Package-Classifier # Main project directory 
-        ┣ 📂 user-interface # Web-app related code
-        ┣ 📂 database # Database schemas, actions
-        ┣ 📂 robotic-arm # ROS2 scripts, Kinova Kortex API implementations, motion planning algorithms 
-        ┣ 📂 package-labels # Labeling datasets, classification models, and annotation files  
-        ┣ 📂 vision # Computer vision models, OpenCV scripts, image processing logic
-        ┣ 📂 docs # Documentation, API specs, and technical reports  
-        ┣ 📜 .gitignore
-        ┣ 📜 README.md
-
-📜 README.md
-
+📦 Automated-Package-Classifier
+ ┣ 📂 user-interface
+ ┣ 📂 database
+ ┣ 📂 robotic-arm
+ ┣ 📂 package-labels
+ ┣ 📂 vision
+ ┣ 📂 docs
+ ┣ 📜 .gitignore
+ ┣ 📜 README.md
 ```
 
 
