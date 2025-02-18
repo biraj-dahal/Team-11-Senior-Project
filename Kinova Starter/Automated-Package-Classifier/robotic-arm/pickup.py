@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 from robot import Robot
 
@@ -22,8 +23,15 @@ def main():
 
         robot = Robot(router)
         robot.move_to_home_position()
-        robot.move_to_angle_config([0, 0, 0, 0, 0, 0])
-        robot.close_gripper_with_speed()
+        time.sleep(3)
+        robot.open_gripper_with_speed()
+        time.sleep(3)
+        robot.move_to_angle_config(
+            [345.845, 39.657, 192.208, 250.67, 345.695, 331.633, 97.461]
+        )
+        time.sleep(3)
+        robot.close_gripper_with_speed(2)
+        time.sleep(3)
         robot.move_to_home_position()
 
 
