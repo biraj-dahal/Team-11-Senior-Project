@@ -1,128 +1,168 @@
 import gi
-gi.require_version('Gst', '1.0')
-from gi.repository import Gst, GLib
 import numpy as np
 import cv2
-import time
 import threading
 from queue import Queue
+from gi.repository import Gst, GLib
+import json
+import re
 
-def on_eos(bus, message, loop):
-    """ End of stream callback """
-    print('End of Stream')
-    loop.quit()
+gi.require_version('Gst', '1.0')
 
-def on_error(bus, message, loop):
-    """ Error callback with detailed logging """
-    err, debug_info = message.parse_error()
-    print(f"Error: {err}, {debug_info}")
-    loop.quit()
 
-def on_new_sample(sink, user_data):
-    """ Callback function to grab a frame from the pipeline and detect QR codes """
-    frame_queue = user_data  # Unpack frame_queue from user_data
-    sample = sink.emit("pull-sample")
-    if sample:
-        # Convert the sample to an OpenCV frame
-        buffer = sample.get_buffer()
-        caps = sample.get_caps()
+class RTSPStreamProcessor:
+    def __init__(self, rtsp_url):
+        """ Initialize the RTSP stream processor with the RTSP URL """
+        self.rtsp_url = rtsp_url
+        self.frame_queue = Queue()
+        self.loop = GLib.MainLoop()
+        self.pipeline = None
+        self.display_thread = None
+        self.bus = ""
+        self.data = ""
 
-        # Extract the caps structure (the first structure in the caps)
-        structure = caps.get_structure(0)
+    def on_eos(self, bus, message):
+        """ End of stream callback """
+        print('End of Stream')
+        self.loop.quit()
 
-        # Get width and height from caps and print them
-        width = structure.get_value('width')
-        height = structure.get_value('height')
-        format = structure.get_value('format')
-        print(f"Width: {width}, Height: {height}, Format: {format}")
+    def on_error(self, bus, message):
+        """ Error callback with detailed logging """
+        err, debug_info = message.parse_error()
+        print(f"Error: {err}, {debug_info}")
+        self.loop.quit()
 
-        # Map the buffer to access the data
-        success, map_info = buffer.map(Gst.MapFlags.READ)
-        if success:
-            # Check if the buffer size matches the expected size
-            frame = np.ndarray(
-                (height, width, 3), dtype=np.uint8, buffer=map_info.data)
+    def on_new_sample(self, sink, user_data):
+        """ Callback function to grab a frame from the pipeline and detect QR codes """
+        frame_queue = user_data  # Unpack frame_queue from user_data
+        sample = sink.emit("pull-sample")
+        if sample:
+            # Convert the sample to an OpenCV frame
+            buffer = sample.get_buffer()
+            caps = sample.get_caps()
 
-            # Log frame details to check if the frame is valid
-            print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}")
+            # Extract the caps structure (the first structure in the caps)
+            structure = caps.get_structure(0)
 
-            # Detect QR codes
-            qr_code_detector = cv2.QRCodeDetector()
-            data, pts, qr_code = qr_code_detector.detectAndDecode(frame)
+            # Get width and height from caps and print them
+            width = structure.get_value('width')
+            height = structure.get_value('height')
+            format = structure.get_value('format')
+            print(f"Width: {width}, Height: {height}, Format: {format}")
 
-            if data:
-                print(f"QR Code Data: {data}")
-            else:
-                print("Nothing: No QR code detected")
+            # Map the buffer to access the data
+            success, map_info = buffer.map(Gst.MapFlags.READ)
+            if success:
+                # Check if the buffer size matches the expected size
+                frame = np.ndarray(
+                    (height, width, 3), dtype=np.uint8, buffer=map_info.data)
 
-            # Put the frame into the queue to be processed by the main thread
-            frame_queue.put(frame)
+                # Log frame details to check if the frame is valid
+                print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}")
 
-            # Unmap the buffer
-            buffer.unmap(map_info)
+                # Detect QR codes
+                qr_code_detector = cv2.QRCodeDetector()
+                data, pts, qr_code = qr_code_detector.detectAndDecode(frame)
 
-    return Gst.FlowReturn.OK
+                if data:
+                    print(f"QR Code Data: {data}")
+                    self.data = data
+                    self.on_eos(bus=self.bus, message="Data detected")
+                else:
+                    print("Nothing: No QR code detected")
 
-def display_frames(frame_queue):
-    """ Main thread function to display frames """
-    while True:
-        if not frame_queue.empty():
-            frame = frame_queue.get()
-            if frame is None:
-                continue
+                # Put the frame into the queue to be processed by the main thread
+                frame_queue.put(frame)
 
-            # Log frame details
-            print(f"Displaying frame with shape: {frame.shape}")
+                # Unmap the buffer
+                buffer.unmap(map_info)
 
-            # Show the frame with the detected QR code
-            cv2.imshow('RTSP Stream with QR Codes', frame)
+        return Gst.FlowReturn.OK
 
-            # Check for exit key
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+    def display_frames(self):
+        """ Main thread function to display frames """
+        while True:
+            if not self.frame_queue.empty():
+                frame = self.frame_queue.get()
+                if frame is None:
+                    continue
 
-    cv2.destroyAllWindows()
+                # Log frame details
+                print(f"Displaying frame with shape: {frame.shape}")
 
-def start_rtsp_stream():
-    # Initialize GStreamer
-    Gst.init(None)
+                # Show the frame with the detected QR code
+                cv2.imshow('RTSP Stream with QR Codes', frame)
 
-    # Create the pipeline for the RTSP stream with videoconvert (to handle different formats)
-    pipeline = Gst.parse_launch(
-        "rtspsrc location=rtsp://10.0.0.222/color ! decodebin ! videoconvert ! video/x-raw, format=RGB ! appsink name=sink emit-signals=True"
-    )
+                # Check for exit key
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
 
-    # Create a queue for passing frames between threads
-    frame_queue = Queue()
+        cv2.destroyAllWindows()
 
-    # Get the appsink element and set the callback function
-    appsink = pipeline.get_by_name("sink")
-    if appsink:
-        appsink.connect("new-sample", on_new_sample, frame_queue)
-    else:
-        print("Failed to get appsink element")
+    def start_rtsp_stream(self):
+        """ Start the RTSP stream pipeline """
+        # Initialize GStreamer
+        Gst.init(None)
 
-    # Set up the loop and bus for handling events
-    loop = GLib.MainLoop()
-    bus = pipeline.get_bus()
-    bus.add_signal_watch()
-    bus.connect("message::eos", on_eos, loop)
-    bus.connect("message::error", on_error, loop)
+        # Create the pipeline for the RTSP stream with videoconvert (to handle different formats)
+        self.pipeline = Gst.parse_launch(
+            f"rtspsrc location={self.rtsp_url} ! decodebin ! videoconvert ! video/x-raw, format=RGB ! appsink name=sink emit-signals=True"
+        )
 
-    # Start the pipeline
-    pipeline.set_state(Gst.State.PLAYING)
+        # Get the appsink element and set the callback function
+        appsink = self.pipeline.get_by_name("sink")
+        if appsink:
+            appsink.connect("new-sample", self.on_new_sample, self.frame_queue)
+        else:
+            print("Failed to get appsink element")
 
-    # Start a separate thread for displaying frames
-    display_thread = threading.Thread(target=display_frames, args=(frame_queue,))
-    display_thread.start()
+        # Set up the loop and bus for handling events
+        bus = self.pipeline.get_bus()
+        self.bus = bus
+        bus.add_signal_watch()
+        bus.connect("message::eos", self.on_eos)
+        bus.connect("message::error", self.on_error)
 
-    try:
-        loop.run()
-    except:
-        pass
+        # Start the pipeline
+        self.pipeline.set_state(Gst.State.PLAYING)
 
-    # Stop the pipeline when done
-    pipeline.set_state(Gst.State.NULL)
+        # Start a separate thread for displaying frames
+        # self.display_thread = threading.Thread(target=self.display_frames)
+        # self.display_thread.start()
+
+        try:
+            self.loop.run()
+        except:
+            pass
+
+        # Stop the pipeline when done
+        self.pipeline.set_state(Gst.State.NULL)
+        return self.data
+    
+
+def convert_to_dict(input_str):
+
+        corrected_str = re.sub(r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', input_str) 
+        corrected_str = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,}])', r':"\1"', corrected_str) 
+        python_dict = ""
+        try:
+            python_dict = json.loads(corrected_str)
+            return python_dict
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            return None
+        
+        return python_dict
+
+    
+
+
 
 if __name__ == "__main__":
-    start_rtsp_stream()
+    rtsp_url = "rtsp://10.0.0.222/color" 
+    stream_processor = RTSPStreamProcessor(rtsp_url)
+    data_str = stream_processor.start_rtsp_stream()
+    data = convert_to_dict(data_str)
+    print(data)
+    print(type(data))
+

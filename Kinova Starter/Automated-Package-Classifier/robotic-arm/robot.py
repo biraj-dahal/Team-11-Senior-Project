@@ -1,11 +1,23 @@
 import sys
 import threading
 import time
+import os
+import re
+import json
 
 from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
 from kortex_api.autogen.messages import Base_pb2
 from typing import List
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from vision.streamer_pipeline import RTSPStreamProcessor
+
+class DefinedPositions:
+    PERISHABLE = [292.318, 64.931, 178.571, 253.963, 36.948, 348.73, 344.96] # W
+    HAZARDOUS = [165.682, 358.721, 174.79, 260.499, 64.21, 329.353, 43.232] # S
+    RETURN = [131.384, 34.513, 126.049, 232.762, 53.654, 316.227, 60.587] # E
+    MAINCONVEYER = [345.845, 39.657, 192.208, 250.67, 345.695, 331.633, 97.461] # ND
+    QRSCAN = [342.552, 27.898, 196.617, 256.042, 350.27, 314.503, 93.662] #NU
 
 class Robot:
     def __init__(self, router, proportional_gain=2.0, timeout_duration=20):
@@ -16,6 +28,7 @@ class Robot:
 
         # Create base client using TCP router
         self.base = BaseClient(self.router)
+        self.pre_defined_positions = DefinedPositions()
 
     def open_gripper_with_speed(self, gripper_speed=Base_pb2.GRIPPER_SPEED):
         gripper_command = Base_pb2.GripperCommand()
@@ -161,3 +174,33 @@ class Robot:
         else:
             print("Timeout on action notification wait")
         return finished
+    
+
+    
+    def scan_qr_and_process(self):
+        rtsp_url = "rtsp://10.0.0.222/color" 
+        stream_processor = RTSPStreamProcessor(rtsp_url)
+        stream_data = ""
+        try:
+            stream_data_str = stream_processor.start_rtsp_stream()
+            stream_data = self.__convert_to_dict(stream_data_str)
+        except:
+            print("Error retriving data from the RTSPStreamProcessor")
+        
+        return stream_data['package_type']
+
+    def __convert_to_dict(self, input_str):
+
+        corrected_str = re.sub(r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', input_str) 
+        corrected_str = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,}])', r':"\1"', corrected_str) 
+        python_dict = ""
+        try:
+            python_dict = json.loads(corrected_str)
+            return python_dict
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            return None
+        
+        return python_dict
+
+    
