@@ -66,7 +66,7 @@ class RTSPStreamProcessor:
 
                 if data:
                     print(f"QR Code Data: {data}")
-                    self.data = data
+                    self.data = self._parse_qr_data(data)
                     self.on_eos(bus=self.bus, message="Data detected")
                 else:
                     print("Nothing: No QR code detected")
@@ -140,29 +140,24 @@ class RTSPStreamProcessor:
         return self.data
     
 
-def convert_to_dict(input_str):
 
-        corrected_str = re.sub(r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', input_str) 
-        corrected_str = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,}])', r':"\1"', corrected_str) 
-        python_dict = ""
-        try:
-            python_dict = json.loads(corrected_str)
-            return python_dict
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            return None
-        
-        return python_dict
+    def _parse_qr_data(self, data: str):
+            """ Parses raw QR code data into JSON format """
+            try:
+                # Attempt to fix improperly formatted JSON-like data
+                corrected_str = re.sub(r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', data)
+                corrected_str = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,}])', r':"\1"', corrected_str)
 
-    
+                parsed_data = json.loads(corrected_str)
 
+                # Ensure it contains required fields
+                if "package_type" in parsed_data and "phone" in parsed_data:
+                    parsed_data["package_type"] = parsed_data["package_type"].lower()  # Normalize
+                    return parsed_data
+                else:
+                    raise ValueError("Missing required keys in QR data.")
 
-
-if __name__ == "__main__":
-    rtsp_url = "rtsp://10.0.0.222/color" 
-    stream_processor = RTSPStreamProcessor(rtsp_url)
-    data_str = stream_processor.start_rtsp_stream()
-    data = convert_to_dict(data_str)
-    print(data)
-    print(type(data))
+            except json.JSONDecodeError as e:
+                print(f"Error parsing QR data: {e}")
+                return None
 
