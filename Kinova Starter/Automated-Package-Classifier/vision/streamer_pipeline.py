@@ -4,165 +4,162 @@ import cv2
 import threading
 from queue import Queue
 from gi.repository import Gst, GLib
+import logging
+from dataclasses import dataclass
+from typing import Optional
+from vision.qr_processor import QRProcessor
 import json
-import re
 
 gi.require_version('Gst', '1.0')
 
+@dataclass
+class StreamConfig:
+    width: int
+    height: int
+    format: str
 
 class RTSPStreamProcessor:
-    def __init__(self, rtsp_url):
+    def __init__(self, rtsp_url: str):
         """ Initialize the RTSP stream processor with the RTSP URL """
         self.rtsp_url = rtsp_url
         self.frame_queue = Queue()
         self.loop = GLib.MainLoop()
         self.pipeline = None
-        self.display_thread = None
+        self.logger = logging.getLogger(__name__)
         self.bus = ""
         self.data = ""
+        self.current_frame = None
+        self._stream_lock = threading.Lock()
+        self._is_running = False
+        self.qr_processor = QRProcessor()
 
     def on_eos(self, bus, message):
         """ End of stream callback """
-        print('End of Stream')
+        self.logger.info('End of Stream received')
+        self._is_running = False
         self.loop.quit()
 
     def on_error(self, bus, message):
         """ Error callback with detailed logging """
         err, debug_info = message.parse_error()
-        print(f"Error: {err}, {debug_info}")
+        self.logger.error(f"Stream Error: {err}, Debug: {debug_info}")
+        self._is_running = False
         self.loop.quit()
 
     def on_new_sample(self, sink, user_data):
         """ Callback function to grab a frame from the pipeline and detect QR codes """
-        frame_queue = user_data  # Unpack frame_queue from user_data
-        sample = sink.emit("pull-sample")
-        if sample:
-            # Convert the sample to an OpenCV frame
-            buffer = sample.get_buffer()
-            caps = sample.get_caps()
+        try:
+                sample = sink.emit("pull-sample")
+                if not sample:
+                    return Gst.FlowReturn.ERROR
+                buffer = sample.get_buffer()
+                caps = sample.get_caps()
+                structure = caps.get_structure(0)
 
-            # Extract the caps structure (the first structure in the caps)
-            structure = caps.get_structure(0)
+                config = StreamConfig(
+                    width=structure.get_value('width'),
+                    height=structure.get_value('height'),
+                    format=structure.get_value('format')
+                )
 
-            # Get width and height from caps and print them
-            width = structure.get_value('width')
-            height = structure.get_value('height')
-            format = structure.get_value('format')
-            print(f"Width: {width}, Height: {height}, Format: {format}")
+                success, map_info = buffer.map(Gst.MapFlags.READ)
+                if not success:
+                    return Gst.FlowReturn.ERROR
 
-            # Map the buffer to access the data
-            success, map_info = buffer.map(Gst.MapFlags.READ)
-            if success:
-                # Check if the buffer size matches the expected size
-                frame = np.ndarray(
-                    (height, width, 3), dtype=np.uint8, buffer=map_info.data)
+                try:
+                    frame = np.ndarray(
+                        (config.height, config.width, 3),
+                        dtype=np.uint8,
+                        buffer=map_info.data
+                    )
+                    self.current_frame = frame.copy()
 
-                # Log frame details to check if the frame is valid
-                print(f"Frame shape: {frame.shape}, dtype: {frame.dtype}")
+                    qr_data = self.qr_processor.process_frame(frame)
+                    if qr_data:
+                        self.logger.info(f"QR Code Data detected: {qr_data}")
+                        self.data = json.dumps({
+                            "package_type": qr_data.package_type.lower(),  
+                            "phone": qr_data.phone
+                        })
+                        self.on_eos(bus=self.bus, message="Data detected")
+                    
+                    user_data.put(frame)
 
-                # Detect QR codes
-                qr_code_detector = cv2.QRCodeDetector()
-                data, pts, qr_code = qr_code_detector.detectAndDecode(frame)
+                finally:
+                    buffer.unmap(map_info)
 
-                if data:
-                    print(f"QR Code Data: {data}")
-                    self.data = data
-                    self.on_eos(bus=self.bus, message="Data detected")
-                else:
-                    print("Nothing: No QR code detected")
+                return Gst.FlowReturn.OK
 
-                # Put the frame into the queue to be processed by the main thread
-                frame_queue.put(frame)
+        except Exception as e:
+  
+                self.logger.error(f"Error processing sample: {e}")
+                return Gst.FlowReturn.ERROR
 
-                # Unmap the buffer
-                buffer.unmap(map_info)
-
-        return Gst.FlowReturn.OK
-
-    def display_frames(self):
-        """ Main thread function to display frames """
-        while True:
-            if not self.frame_queue.empty():
-                frame = self.frame_queue.get()
-                if frame is None:
-                    continue
-
-                # Log frame details
-                print(f"Displaying frame with shape: {frame.shape}")
-
-                # Show the frame with the detected QR code
-                cv2.imshow('RTSP Stream with QR Codes', frame)
-
-                # Check for exit key
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-
-        cv2.destroyAllWindows()
-
-    def start_rtsp_stream(self):
-        """ Start the RTSP stream pipeline """
-        # Initialize GStreamer
-        Gst.init(None)
-
-        # Create the pipeline for the RTSP stream with videoconvert (to handle different formats)
-        self.pipeline = Gst.parse_launch(
-            f"rtspsrc location={self.rtsp_url} ! decodebin ! videoconvert ! video/x-raw, format=RGB ! appsink name=sink emit-signals=True"
-        )
-
-        # Get the appsink element and set the callback function
-        appsink = self.pipeline.get_by_name("sink")
-        if appsink:
+    def setup_pipeline(self) -> bool:
+        try:
+            Gst.init(None)
+            pipeline_str = (
+                f"rtspsrc location={self.rtsp_url} ! "
+                "decodebin ! "
+                "videoconvert ! "
+                "video/x-raw, format=RGB ! "
+                "appsink name=sink emit-signals=True"
+            )
+            self.pipeline = Gst.parse_launch(pipeline_str)
+            
+            appsink = self.pipeline.get_by_name("sink")
+            if not appsink:
+                raise RuntimeError("Failed to create appsink")
+            
             appsink.connect("new-sample", self.on_new_sample, self.frame_queue)
-        else:
-            print("Failed to get appsink element")
-
-        # Set up the loop and bus for handling events
-        bus = self.pipeline.get_bus()
-        self.bus = bus
-        bus.add_signal_watch()
-        bus.connect("message::eos", self.on_eos)
-        bus.connect("message::error", self.on_error)
-
-        # Start the pipeline
-        self.pipeline.set_state(Gst.State.PLAYING)
-
-        # Start a separate thread for displaying frames
-        # self.display_thread = threading.Thread(target=self.display_frames)
-        # self.display_thread.start()
-
-        try:
-            self.loop.run()
-        except:
-            pass
-
-        # Stop the pipeline when done
-        self.pipeline.set_state(Gst.State.NULL)
-        return self.data
-    
-
-def convert_to_dict(input_str):
-
-        corrected_str = re.sub(r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'"\1":', input_str) 
-        corrected_str = re.sub(r':\s*([a-zA-Z0-9_]+)(?=\s*[,}])', r':"\1"', corrected_str) 
-        python_dict = ""
-        try:
-            python_dict = json.loads(corrected_str)
-            return python_dict
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            return None
+            
+            self.bus = self.pipeline.get_bus()
+            self.bus.add_signal_watch()
+            self.bus.connect("message::eos", self.on_eos)
+            self.bus.connect("message::error", self.on_error)
+            
+            return True
         
-        return python_dict
+        except Exception as e:
+            self.logger.error(f"Failed to setup pipeline: {e}")
+            return False
 
-    
+    def start_rtsp_stream(self) -> str:
+        """ Start the RTSP stream and return the QR code data when found """
+        try:
+            self.logger.info("Reached start_rtsp_stream")
+            if not self.setup_pipeline():
+                return ""
+            self.logger.info("Reached start_rtsp_stream2")
+            self._is_running = True
+            self.pipeline.set_state(Gst.State.PLAYING)
+            self.logger.info("Reached start_rtsp_stream3")
 
+            try:
+                self.logger.info("Reached start_rtsp_stream4")
+                self.loop.run()
+            except Exception as e:
+                self.logger.error(f"Error in main loop: {e}")
+                return ""
+            
+            self.logger.info("Reached start_rtsp_stream5")
 
+            self.pipeline.set_state(Gst.State.NULL)
+            return self.data
 
-if __name__ == "__main__":
-    rtsp_url = "rtsp://10.0.0.222/color" 
-    stream_processor = RTSPStreamProcessor(rtsp_url)
-    data_str = stream_processor.start_rtsp_stream()
-    data = convert_to_dict(data_str)
-    print(data)
-    print(type(data))
+        except Exception as e:
+            self.logger.error(f"Failed to start stream: {e}")
+            return ""
 
+    def get_current_frame(self) -> Optional[np.ndarray]:
+        """Return a copy of the current frame with thread safety"""
+        with self._stream_lock:
+            return self.current_frame.copy() if self.current_frame is not None else None
+
+    def stop(self) -> None:
+        """Stop the RTSP stream processing"""
+        self._is_running = False
+        if self.pipeline:
+            self.pipeline.set_state(Gst.State.NULL)
+        if self.loop.is_running():
+            self.loop.quit()
