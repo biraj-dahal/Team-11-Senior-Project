@@ -14,12 +14,6 @@ class VisionController:
         self.logger = logging.getLogger(__name__)
 
     def scan_qr(self):
-        """
-        Scan QR code and return parsed data
-        Returns:
-            Optional[Dict[str, Any]]: Dictionary containing package_type and metadata,
-                                    or None if no QR code is detected
-        """
         try:
             stream_processor = RTSPStreamProcessor(self.rtsp_url)
             data_str = stream_processor.start_rtsp_stream()
@@ -28,7 +22,6 @@ class VisionController:
                 self.logger.info("No QR code data received")
                 return None
             
-            # Parse the JSON string into a dictionary
             try:
                 data = json.loads(data_str)
                 if not isinstance(data, dict) or 'package_type' not in data:

@@ -112,38 +112,28 @@ class Robot:
 
     def close_gripper_with_speed(self, gripper_speed=Base_pb2.GRIPPER_SPEED) -> bool:
 
-        try:
-            with self._movement_lock:
-                gripper_command = Base_pb2.GripperCommand()
-                finger = gripper_command.gripper.finger.add()
-                
-                self.logger.info("Closing gripper...")
-                gripper_command.mode = gripper_speed
-                finger.value = -0.1
-                self.base.SendGripperCommand(gripper_command)
-                
-                # Wait for completion
-                gripper_request = Base_pb2.GripperRequest()
-                gripper_request.mode = Base_pb2.GRIPPER_POSITION
-                
-                start_time = time.time()
-                while time.time() - start_time < self.timeout_duration:
-                    gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
-                    if len(gripper_measure.finger):
-                        current_speed = gripper_measure.finger[0].value
-                        self.logger.debug(f"Current gripper speed: {current_speed}")
-                        if current_speed == 0.0:
-                            return True
-                    else:
-                        break
-                    time.sleep(0.1)
-                
-                self.logger.warning("Gripper operation timed out")
-                return False
-                
-        except Exception as e:
-            self.logger.error(f"Error closing gripper: {e}")
-            return False
+        # Create the GripperCommand we will send
+        gripper_command = Base_pb2.GripperCommand()
+        finger = gripper_command.gripper.finger.add()
+
+        # Set speed to close gripper
+        print("Closing gripper using speed command...")
+        gripper_command.mode = gripper_speed
+        finger.value = -0.1
+        self.base.SendGripperCommand(gripper_command)
+        gripper_request = Base_pb2.GripperRequest()
+
+        # Wait for reported speed to be 0
+        gripper_request.mode = Base_pb2.GRIPPER_POSITION
+        gripper_request.mode = gripper_speed
+        while True:
+            gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
+            if len(gripper_measure.finger):
+                print("Current speed is : {0}".format(gripper_measure.finger[0].value))
+                if gripper_measure.finger[0].value == 0.0:
+                    break
+            else:  # Else, no finger present in answer, end loop
+                break
 
     def _check_for_end_or_abort(self, e: threading.Event):
 
@@ -260,7 +250,7 @@ class Robot:
 
     def process_package(self, package_type: str) -> bool:
         try:
-            # Determine target position
+
             if package_type == "perishable":
                 target_pos = self.pre_defined_positions.get_position("PERISHABLE")
             elif package_type == "hazardous":
@@ -268,26 +258,35 @@ class Robot:
             else:
                 target_pos = self.pre_defined_positions.get_position("RETURN")
 
-            steps = [
-                (self.pre_defined_positions.get_position("MAINCONVEYER").angles, self.close_gripper_with_speed),
-                (target_pos.angles, self.open_gripper_with_speed),
-                (self.move_to_home_position, None)  
-            ]
+            # Move to the main conveyor and close the gripper
+            if not self.move_to_angle_config(self.pre_defined_positions.get_position("MAINCONVEYER").angles):
+                self.logger.error("Failed to move to main conveyor position")
+                return False
+            time.sleep(2)
 
-            for move, action in steps:
-                if callable(move): 
-                    if not move():
-                        self.logger.error("Failed to return to home position")
-                        return False
-                else:  
-                    if not self.move_to_angle_config(move):
-                        self.logger.error("Failed to complete movement sequence")
-                        return False
-                
-                time.sleep(2)
-                if action and not action():
-                    self.logger.error("Failed to complete gripper action")
-                    return False
+            self.close_gripper_with_speed()
+        
+            time.sleep(2)
+
+            if not self.move_to_home_position():
+                self.logger.error("Failed to return to home position")
+                return False
+            time.sleep(2)
+
+            if not self.move_to_angle_config(target_pos.angles):
+                self.logger.error("Failed to move to target position")
+                return False
+            time.sleep(2)
+
+            if not self.open_gripper_with_speed():
+                self.logger.error("Failed to open gripper")
+                return False
+            time.sleep(2)
+
+            if not self.move_to_home_position():
+                self.logger.error("Failed to return to home position")
+                return False
+            time.sleep(2)
 
             return True
 

@@ -79,7 +79,6 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
             except Exception as e:
                 logger.error(f"Critical error: {e}")
             finally:
-                # Cleanup
                 logger.info("Shutting down robot...")
                 if 'robot' in locals():
                         robot.move_to_home_position()
