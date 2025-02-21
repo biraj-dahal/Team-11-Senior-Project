@@ -1,0 +1,5 @@
+rtsp_url: "rtsp://10.0.0.222/color"
+tcp_port: 10000
+udp_port: 10001
+timeout_duration: 20
+default_gripper_speed: 2.0
