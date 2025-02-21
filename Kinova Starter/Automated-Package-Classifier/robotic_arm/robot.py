@@ -4,7 +4,9 @@ import time
 import os
 import re
 import json
-import logging
+import logging, logging.config
+import yaml
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 
@@ -12,6 +14,24 @@ from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
 from kortex_api.autogen.messages import Base_pb2
 
 from .vision_controller import VisionController
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+CONFIG_PATH = BASE_DIR / "config.yaml"
+LOGGING_CONFIG_PATH = BASE_DIR / "logging.yaml"
+if LOGGING_CONFIG_PATH.exists():
+    with open(LOGGING_CONFIG_PATH, "r") as f:
+        logging.config.dictConfig(yaml.safe_load(f))
+
+
+
+def load_config():
+    if CONFIG_PATH.exists():
+        with open(CONFIG_PATH, "r") as f:
+            return yaml.safe_load(f)
+    else:
+        raise FileNotFoundError(f"Missing configuration file: {CONFIG_PATH}")
+
+config = load_config()
 
 @dataclass
 class RobotPosition:
@@ -55,8 +75,8 @@ class DefinedPositions:
         return self.positions[position_name]
 
 class Robot:
-    def __init__(self, router, rtsp_url: str = "rtsp://10.0.0.222/color", 
-                 proportional_gain: float = 2.0, timeout_duration: int = 20):
+    def __init__(self, router, rtsp_url: str = config.get("rtsp_url", "rtsp://10.0.0.222/color"), 
+                 proportional_gain: float = config.get("proportional_gain", 2.0), timeout_duration: int = config.get("timeout_duration", 20)):
  
         self.logger = logging.getLogger(__name__)
         self.proportional_gain = proportional_gain

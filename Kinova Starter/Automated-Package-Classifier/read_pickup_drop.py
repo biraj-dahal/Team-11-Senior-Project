@@ -9,20 +9,17 @@ import robotic_arm.utilities as utilities
 parser = argparse.ArgumentParser()
 args = utilities.parseConnectionArguments(parser)
 
+import logging.config
+import yaml
 
 def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler('robot_operation.log')
-        ]
-    )
+    with open('logging.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    logging.config.dictConfig(config)
     return logging.getLogger(__name__)
 
-
 logger = setup_logging()
+
 with utilities.DeviceConnection.createTcpConnection(args) as router:
         robot = Robot(router)
         
@@ -35,12 +32,12 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
                 logger.info("Moving to home position...")
                 if not robot.move_to_home_position():
                     logger.error("Failed to reach home position")
-                    continue
+                    break
                 time.sleep(2)
 
                 if not robot.open_gripper_with_speed():
                     logger.error("Failed to open gripper")
-                    continue
+                    break
                 time.sleep(1)
 
         
@@ -48,7 +45,7 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
                 scan_position = robot.pre_defined_positions.get_position("QRSCAN")
                 if not robot.move_to_angle_config(scan_position.angles):
                     logger.error("Failed to reach scan position")
-                    continue
+                    break
                 time.sleep(2)
 
 
@@ -64,7 +61,7 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
 
                 if not robot.process_package(package_type):
                     logger.error("Failed to process package")
-                    continue
+                    break
 
                 logger.info("Package delivery cycle complete. Starting next cycle...\n")
                 time.sleep(2)  
