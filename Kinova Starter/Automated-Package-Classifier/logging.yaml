@@ -9,7 +9,7 @@ handlers:
     level: INFO
   file:
     class: logging.FileHandler
-    filename: robot.log
+    filename: log/robot.log
     formatter: default
     level: DEBUG
 root:
