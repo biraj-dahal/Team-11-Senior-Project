@@ -67,7 +67,7 @@ class DefinedPositions:
                 [342.552, 27.898, 196.617, 256.042, 350.27, 314.503, 93.662],
                 'QRSCAN',
                 'QR code scanning position (NU)'
-            ),
+            )
         }
 
     def get_position(self, position_name: str) -> RobotPosition:
