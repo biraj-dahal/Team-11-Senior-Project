@@ -11,6 +11,7 @@ from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 
 from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
+from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
 from kortex_api.autogen.messages import Base_pb2
 
 from .vision_controller import VisionController
@@ -85,6 +86,9 @@ class Robot:
         
         # Initialize base client for robot control
         self.base = BaseClient(self.router)
+        
+        #Initialize base cycle client for cartesian correspondence
+        self.base_cycle = BaseCyclicClient(router)
         self.pre_defined_positions = DefinedPositions()
         
         # Initialize vision system
@@ -164,6 +168,61 @@ class Robot:
                 notification.action_event == Base_pb2.ACTION_ABORT):
                 e.set()
         return check
+
+    def get_cartesian_pose(self) -> List[float]:
+        self.logger.info("Fetching Cartesian position")
+        action = Base_pb2.Action()
+        action.name = "Example Cartesian fetch"
+        action.application_data = "robits fetch"
+
+        feedback = self.base_cycle.RefreshFeedback()
+
+        return [feedback.base.tool_pose_x,
+        feedback.base.tool_pose_y,
+        feedback.base.tool_pose_z,
+        feedback.base.tool_pose_theta_x,
+        feedback.base.tool_pose_theta_y,
+        feedback.base.tool_pose_theta_z
+        ]
+
+    def go_to_cartesian(self, coordinates: List[float]) -> bool:
+
+        try:
+            with self._movement_lock:
+                x, y, z, theta_x, theta_y, theta_z = coordinates
+                self.logger.info("Starting cartesian movement...")
+                action = Base_pb2.Action()
+                action.name = "RPC Programmed Cartesian Action"
+                action.application_data = ""
+
+                feedback = self.base_cycle.RefreshFeedback()
+
+                cartesian_pose = action.reach_pose.target_pose
+                cartesian_pose.x = x       # (meters)
+                cartesian_pose.y = y
+                cartesian_pose.z = z
+                cartesian_pose.theta_x = theta_x  # (degrees)
+                cartesian_pose.theta_y = theta_y
+                cartesian_pose.theta_z = theta_z 
+
+                # Execute movement
+                e = threading.Event()
+                notification_handle = self.base.OnNotificationActionTopic(
+                    self._check_for_end_or_abort(e), 
+                    Base_pb2.NotificationOptions()
+                )
+
+                self.base.ExecuteAction(action)
+                finished = e.wait(self.timeout_duration)
+                self.base.Unsubscribe(notification_handle)
+
+                if not finished:
+                    self.logger.warning("Cartesian movement timed out")
+                return finished
+
+        except Exception as e:
+            self.logger.error(f"Error in angular movement: {e}")
+            return False
 
     def move_to_home_position(self) -> bool:
 
