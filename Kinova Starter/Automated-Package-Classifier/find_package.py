@@ -25,7 +25,9 @@ from PIL import Image
 import cv2
 import numpy as np
 
-def find_package(frame, model):
+MAX_X, MAX_Y = 900, 1000
+
+def find_package(frame, model, min_confidence):
     """Locating the package to pick up"""
     
     # Perform inference on the frame
@@ -43,8 +45,10 @@ def find_package(frame, model):
     center = ()
 
     for box, confidence, class_id in zip(boxes, confidences, class_ids):
-        if confidence >= 0.3:  # Threshold for confidence
-            x_min, y_min, x_max, y_max = box
+        x_min, y_min, x_max, y_max = box
+        if class_names[class_id] == 'book':
+            logger.info(f"Package found! Here are the max dims: x-max ->{x_max} y-max ->{y_max}")
+        if confidence >= min_confidence and x_max<MAX_X and y_max<MAX_Y:  # Threshold and dimesnions for confidence
 
             # Calculate the center
             x_center = (x_min + x_max) / 2
@@ -74,8 +78,8 @@ def convert_to_cartesian(center, img_width=1920, img_height=1080,
     y_center, x_center = center  # Get the screen coordinates
 
     # Normalize the x and y coordinates
-    x_norm = (x_center / img_width) * (4/3) - 1
-    y_norm = (y_center / img_height) * (5/2) - 1
+    x_norm = (x_center - (img_width//2)) / img_width
+    y_norm = (y_center - (img_height//2)) / img_height
 
     # Scale normalized coordinates to the arm's workspace
     arm_x = x_norm * max_workspace_x
@@ -97,19 +101,18 @@ def find_package_location(model):
             break
 
         # Find package (QR) and get annotated frame with center
-        center, annotated_frame = find_package(frame, model)
+        center, annotated_frame = find_package(frame, model, 0.25)
 
         # Save every frame with detected package
         if center:
-            print("Aliyoooooop!", center)
             cv2.imwrite(f"frame_{frame_count}.jpg", annotated_frame)  # Save frame as .jpg
-            #positions = calculate_descent(centers[0])
             logger.info(f"Detected center: {center}")
             return center
 
         # Press 'q' to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
 
         frame_count += 1
 
@@ -119,23 +122,35 @@ def find_package_location(model):
 # Initialize the YOLO model
 model = YOLO("yolov8m.pt")
 
+vertical_descent = 0.22
+
 with utilities.DeviceConnection.createTcpConnection(args) as router:
         robot = Robot(router)
 
-        number_of_packages = 1
+        number_of_packages = 2
         while number_of_packages>0:
             try:
+                # Move to Automated staging area
+                robot.go_to_automated_home()
+                if not robot.close_gripper_with_speed():
+                    logger.error("Failed to open gripper")
+                    break
+                time.sleep(2)
+                if number_of_packages==1:
+                    break
+
                 # Start processing the RTSP stream
                 pos = find_package_location(model)
-                adjust_coor = convert_to_cartesian(pos)
+                adjust_coor = convert_to_cartesian(pos, 1920, 1080, 0.15, 0.15)
                 logger.info(f"Normalized x,y: {adjust_coor}")
 
                 target_coor = robot.get_cartesian_pose()
                 logger.info(f"Cartesian coordinates: {target_coor}")
 
-                target_coor[0]+=adjust_coor[0]
-                target_coor[1]+=adjust_coor[1]
-                target_coor[2]-=0.25
+                #Triangulating x, y, and z
+                target_coor[0]-=adjust_coor[0]
+                target_coor[1]-=adjust_coor[1]
+                target_coor[2]-=vertical_descent
                 logger.info(f"Target is: {target_coor}")
 
                 robot.go_to_cartesian(target_coor)
