@@ -130,12 +130,11 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
         number_of_packages = 2
         while number_of_packages>0:
             try:
-                # Move to Automated staging area
-                robot.go_to_automated_home()
-                if not robot.close_gripper_with_speed():
-                    logger.error("Failed to open gripper")
-                    break
+                robot.open_gripper_with_speed()
                 time.sleep(2)
+
+                robot.go_to_automated_home()
+                time.sleep(1)
                 if number_of_packages==1:
                     break
 
