@@ -1,4 +1,9 @@
-ultralytics==8.3.84
-pillow==10.4.0
-open-cv==4.11.0.86
-numpy==1.24.4
+ultralytics
+pillow
+opencv-python
+numpy
+fastapi
+pyyaml
+protobuf
+PyGObject
+opencv-contrib-python
