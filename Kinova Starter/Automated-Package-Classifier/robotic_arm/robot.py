@@ -59,7 +59,7 @@ class DefinedPositions:
                 'Position for return items (E)'
             ),
             'MAINCONVEYER': RobotPosition(
-                [345.845, 39.657, 192.208, 250.67, 345.695, 331.633, 97.461],
+                [343.095, 59.301, 212.683, 284.752, 323.777, 309.359, 25.482],
                 'MAINCONVEYER',
                 'Main conveyer position (ND)'
             ),
@@ -67,7 +67,22 @@ class DefinedPositions:
                 [342.552, 27.898, 196.617, 256.042, 350.27, 314.503, 93.662],
                 'QRSCAN',
                 'QR code scanning position (NU)'
-            )
+            ),
+            'HANDLE': RobotPosition(
+                [341.645, 54.046, 214.396, 285.337, 326.087, 303.654, 24.285],
+                'HANDLE',
+                'Handle position (NU)'
+            ),
+            'SCAN_HANDLE': RobotPosition(
+                [348.526, 33.124, 199.572, 331.918, 348.663, 244.222, 89.568],
+                'SCAN_HANDLE',
+                'Scan handle position (NU)'
+            ),
+            'PERIS_HANDLE': RobotPosition(
+                [7.593, 35.262, 189.871, 243.091, 351.545, 335.521,106.426],
+                'PERIS_HANDLE',
+                'Perishable handle position (NU)'
+            ),
         }
 
     def get_position(self, position_name: str) -> RobotPosition:
@@ -337,11 +352,29 @@ class Robot:
             else:
                 target_pos = self.pre_defined_positions.get_position("RETURN")
 
-            # Move to the main conveyor and close the gripper
-            if not self.move_to_angle_config(self.pre_defined_positions.get_position("MAINCONVEYER").angles):
-                self.logger.error("Failed to move to main conveyor position")
+            if not self.move_to_angle_config(self.pre_defined_positions.get_position("SCAN_HANDLE").angles):
+                self.logger.error("Failed to move to Scan Handle position")
                 return False
             time.sleep(2)
+            print('This is Scan Handle Position')
+            if package_type == "perishable":
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("PERIS_HANDLE").angles):
+                    self.logger.error("Failed to move to peris position")
+                    return False
+                time.sleep(2)
+
+            else:
+                # Move to the main conveyor and close the gripper
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("HANDLE").angles):
+                    self.logger.error("Failed to move to handle position")
+                    return False
+                time.sleep(2)
+                    
+
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("MAINCONVEYER").angles):
+                    self.logger.error("Failed to move to main conveyor position")
+                    return False
+                time.sleep(2)
 
             self.close_gripper_with_speed()
         
