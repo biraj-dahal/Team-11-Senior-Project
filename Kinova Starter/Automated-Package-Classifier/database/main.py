@@ -96,6 +96,92 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
 
 
+fake_statistics = {
+    datetime(2023, 10, 1, 12, 0).strftime(datetime_format): {
+        "id": 1,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+datetime(2023, 11, 1, 12, 0).strftime(datetime_format): {
+        "id": 2,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
+        "id": 3,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+}
+
+fake_performance = {
+    "operational_status": "processing",
+    "gripper_status": "closed",
+    "live_statistics": {    
+        "power_consumption": "100 W",
+        "current_load": "100 gm",
+        "x_alignment": 0.01,
+        "y_alignment": 0.01,
+    },
+}
+
+def handlePackageStatistics(request_json):
+    return fake_statistics
+    
+def handleArmPerformance(request_json):
+    return fake_performance
+ 
+
+@app.websocket("/dashboard_ws")
+async def dashboard_ws_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        try:
+            data = await websocket.receive_text()
+            request_json = json.loads(data)
+        except Exception as e:
+            await websocket.send_text(f"Error processing request: {e}")
+            continue
+
+        print(request_json["type"])
+        match request_json["type"]:
+            case "package_statistics":
+                try:
+                    res = handlePackageStatistics(request_json)
+                    await websocket.send_text(json.dumps(res))
+
+                except Exception as e:
+                    await websocket.send_text(f"Error handling package statistics: {e}")
+                    continue
+
+                continue
+            case "arm_performance":
+                try:
+                    res = handleArmPerformance(request_json)
+                    await websocket.send_text(json.dumps(res))
+
+                except Exception as e:
+                    await websocket.send_text(f"Error handling arm performance: {e}")
+                    continue
+
+                continue
+
+
+
+
+
 @app.get("/processed_packages")
 async def get_processed_packages(request: Request):
     query = """
