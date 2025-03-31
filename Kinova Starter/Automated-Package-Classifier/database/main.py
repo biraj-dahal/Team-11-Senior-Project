@@ -96,6 +96,69 @@ async def websocket_endpoint(websocket: WebSocket):
                 continue
 
 
+fake_statistics = {
+    datetime(2023, 10, 1, 12, 0).strftime(datetime_format): {
+        "id": 1,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+datetime(2023, 11, 1, 12, 0).strftime(datetime_format): {
+        "id": 2,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
+        "id": 3,
+        "perishable": True,
+        "hazardous": False,
+        "error": False,
+        "error_type": None,
+        "error_message": None,
+        "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
+    },
+}
+
+def handlePackageStatistics(request_json):
+    return fake_statistics
+    
+
+
+@app.websocket("/dashboard_ws")
+async def dashboard_ws_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        try:
+            data = await websocket.receive_text()
+            request_json = json.loads(data)
+        except Exception as e:
+            await websocket.send_text(f"Error processing request: {e}")
+            continue
+
+        print(request_json["type"])
+        match request_json["type"]:
+            case "package_statistics":
+                try:
+                    res = handlePackageStatistics(request_json)
+                    await websocket.send_text(json.dumps(res))
+
+                except Exception as e:
+                    await websocket.send_text(f"Error handlinge package statistics: {e}")
+                    continue
+
+                continue
+
+
+
+
+
 @app.get("/processed_packages")
 async def get_processed_packages(request: Request):
     query = """
