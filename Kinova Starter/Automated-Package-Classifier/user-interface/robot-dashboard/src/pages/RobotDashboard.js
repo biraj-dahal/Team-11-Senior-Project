@@ -3,7 +3,8 @@ import { LineChart, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer } f
 import { AlertCircle, Activity, Box, Power } from 'lucide-react';
 import Alert, { AlertDescription, AlertTitle } from '../components/Alert';
 import './RobotDashboard.css';
-import Navbar from '../components/navbar/Navbar'; // Import Sidebar component
+import Navbar from '../components/Navbar';
+
 const RobotDashboard = () => {
   const [status, setStatus] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -41,9 +42,11 @@ const RobotDashboard = () => {
   }, []);
 
   return (
-    <div className="dashboard-container">
+    <div className='app-container'>
       <Navbar/>
-      <h1 className="dashboard-title">Robot Monitoring Dashboard</h1>
+    <div className="dashboard-container">
+    
+      <h1 className="dashboard-title">Dashboard</h1>
       
       <div className="dashboard-grid">
         <div className="card status-card">
@@ -137,6 +140,7 @@ const RobotDashboard = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+    </div>
     </div>
   );
 };

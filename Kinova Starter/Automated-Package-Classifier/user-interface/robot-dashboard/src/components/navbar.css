@@ -1,0 +1,46 @@
+.navbar {
+  width: 15%;
+  background-color: #112c6e;
+  color: white;
+  padding-top: 2rem;
+  min-height: 100vh; /* Ensures the sidebar stretches to full height */
+  position: fixed; /* Fixes the sidebar in place */
+  left: 0;
+  top: 0;
+}
+  
+  .navbar .menu-item {
+    display: block;
+    padding: 15px;
+    color: white;
+    text-decoration: none;
+    margin-bottom: 1rem;
+  }
+  
+  .navbar .menu-item:hover {
+    background-color: #34495e;
+  }
+  
+ 
+  
+  .navbar .menu-item.active {
+    background-color: #cdd0cf; /* Highlight color for active page */
+    font-weight: bold;
+    border-radius: 5px;
+    opacity: 80%;
+  }
+
+  .logo {
+    width: 50%;
+    height: 50%;
+    display: block; /* Ensures proper alignment */
+    margin: 0 auto; /* Centers in a flex container */
+    margin-bottom: 0.5rem;
+    border-radius: 15%;
+  }
+
+  .title {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  

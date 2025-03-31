@@ -1,11 +1,18 @@
+.app-container {
+  display: flex;
+  height: 100vh; /* Full height */
+  width: 100vw; /* Full width */
+}
+
 .dashboard-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    min-height: 100vh;
-  }
+  margin-left: 15%; /* Push the dashboard to the right of the sidebar */
+  width: 90%; /* Ensures the dashboard takes the remaining space */
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #8f97a1 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
   
   .dashboard-title {
     font-size: 2.5rem;
@@ -31,7 +38,7 @@
   }
   
   .card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
   
   .card-title {
