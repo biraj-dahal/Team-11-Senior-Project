@@ -126,10 +126,23 @@ datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
     },
 }
 
+fake_performance = {
+    "operational_status": "processing",
+    "gripper_status": "closed",
+    "live_statistics": {    
+        "power_consumption": "100 W",
+        "current_load": "100 gm",
+        "x_alignment": 0.01,
+        "y_alignment": 0.01,
+    },
+}
+
 def handlePackageStatistics(request_json):
     return fake_statistics
     
-
+def handleArmPerformance(request_json):
+    return fake_performance
+ 
 
 @app.websocket("/dashboard_ws")
 async def dashboard_ws_endpoint(websocket: WebSocket):
@@ -150,7 +163,17 @@ async def dashboard_ws_endpoint(websocket: WebSocket):
                     await websocket.send_text(json.dumps(res))
 
                 except Exception as e:
-                    await websocket.send_text(f"Error handlinge package statistics: {e}")
+                    await websocket.send_text(f"Error handling package statistics: {e}")
+                    continue
+
+                continue
+            case "arm_performance":
+                try:
+                    res = handleArmPerformance(request_json)
+                    await websocket.send_text(json.dumps(res))
+
+                except Exception as e:
+                    await websocket.send_text(f"Error handling arm performance: {e}")
                     continue
 
                 continue
