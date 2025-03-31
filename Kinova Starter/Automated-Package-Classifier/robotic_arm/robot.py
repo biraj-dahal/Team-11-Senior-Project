@@ -44,17 +44,17 @@ class DefinedPositions:
     def __init__(self):
         self.positions = {
             'PERISHABLE': RobotPosition(
-                [292.318, 64.931, 178.571, 253.963, 36.948, 348.73, 344.96],
+                [233.076, 62.818, 208.56, 300.992, 328.957, 294.747, 348.297], # box 1
                 'PERISHABLE',
                 'Position for perishable items (W)'
             ),
             'HAZARDOUS': RobotPosition(
-                [165.682, 358.721, 174.79, 260.499, 64.21, 329.353, 43.232],
+                [273.054, 75.953, 207.013, 311.781, 326.391, 295.177, 348.8], # box2
                 'HAZARDOUS',
                 'Position for hazardous items (S)'
             ),
             'RETURN': RobotPosition(
-                [131.384, 34.513, 126.049, 232.762, 53.654, 316.227, 60.587],
+                [220.444, 81.122, 209.759, 347.953, 326.536, 273.377, 278.236], # box3
                 'RETURN',
                 'Position for return items (E)'
             ),
@@ -83,6 +83,11 @@ class DefinedPositions:
                 'PERIS_HANDLE',
                 'Perishable handle position (NU)'
             ),
+            'SCAN_BOX': RobotPosition(
+                [239.149, 54.587, 210.973, 338.643, 331.151, 252.81, 336.53],
+                'SCAN_BOX',
+                'SCAN_BOX position'
+            )
         }
 
     def get_position(self, position_name: str) -> RobotPosition:
@@ -356,7 +361,7 @@ class Robot:
                 self.logger.error("Failed to move to Scan Handle position")
                 return False
             time.sleep(2)
-            print('This is Scan Handle Position')
+            
             if package_type == "perishable":
                 if not self.move_to_angle_config(self.pre_defined_positions.get_position("PERIS_HANDLE").angles):
                     self.logger.error("Failed to move to peris position")
@@ -383,6 +388,11 @@ class Robot:
             if not self.move_to_home_position():
                 self.logger.error("Failed to return to home position")
                 return False
+            time.sleep(2)
+            
+            if not self.move_to_angle_config(self.pre_defined_positions.get_position("SCAN_BOX").angles):
+                    self.logger.error("Failed to scan box")
+                    return False
             time.sleep(2)
 
             if not self.move_to_angle_config(target_pos.angles):
