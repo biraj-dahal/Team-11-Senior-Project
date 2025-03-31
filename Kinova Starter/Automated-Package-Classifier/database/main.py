@@ -142,6 +142,11 @@ def handlePackageStatistics(request_json):
     
 def handleArmPerformance(request_json):
     return fake_performance
+
+def handleRemoteControl(request_json):
+    print(request_json["servo_control"])
+    return {
+        "status": "success"}
  
 
 @app.websocket("/dashboard_ws")
@@ -155,12 +160,11 @@ async def dashboard_ws_endpoint(websocket: WebSocket):
             await websocket.send_text(f"Error processing request: {e}")
             continue
 
-        print(request_json["type"])
         match request_json["type"]:
             case "package_statistics":
                 try:
                     res = handlePackageStatistics(request_json)
-                    await websocket.send_text(json.dumps(res))
+                    await websocket.send_json(json.dumps(res))
 
                 except Exception as e:
                     await websocket.send_text(f"Error handling package statistics: {e}")
@@ -170,13 +174,32 @@ async def dashboard_ws_endpoint(websocket: WebSocket):
             case "arm_performance":
                 try:
                     res = handleArmPerformance(request_json)
-                    await websocket.send_text(json.dumps(res))
+                    await websocket.send_json(json.dumps(res))
 
                 except Exception as e:
                     await websocket.send_text(f"Error handling arm performance: {e}")
                     continue
 
                 continue
+            case "remote_control_emergency_stop":
+                try:
+                    # Simulate emergency stop
+                    await websocket.send_json(json.dumps({"status": "success"}))
+                except Exception as e:
+                    await websocket.send_text(f"Error handling emergency stop: {e}")
+                    continue
+
+                continue
+            case "remote_control":
+                try:
+                    res = handleRemoteControl(request_json)
+                    await websocket.send_json(json.dumps(res))
+                except Exception as e:
+                    await websocket.send_text(f"Error handling arm performance: {e}")
+                    continue
+
+                continue
+
 
 
 
