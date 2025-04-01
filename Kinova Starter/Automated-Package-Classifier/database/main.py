@@ -192,20 +192,6 @@ def handleRemoteControl(request_json):
     return {
         "status": "success"}
  
-#
-# @app.websocket("/dashboard_ws")
-# async def dashboard_ws_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     while True:
-#         try:
-#             data = await websocket.receive_text()
-#             request_json = json.loads(data)
-#         except Exception as e:
-#             await websocket.send_text(f"Error processing request: {e}")
-#             continue
-#
-#         match request_json["type"]:
-#
 
 
 
