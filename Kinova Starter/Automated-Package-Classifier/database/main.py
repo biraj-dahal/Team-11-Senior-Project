@@ -1,9 +1,11 @@
-from fastapi import FastAPI, WebSocket, Request
+from typing import assert_never
+from fastapi import FastAPI, WebSocket, Request, WebSocketDisconnect
 import sqlite3
 from sqlite3 import Connection
 from contextlib import contextmanager
 import json
 from datetime import datetime
+from ConnectionManager import ConnectionManager
 
 
 def dict_factory(cursor, row):
@@ -72,28 +74,70 @@ def handleProcessedPackage(request_json):
     with query_db(conn, query, params) as _:
         pass
 
+manager = ConnectionManager()
 
-@app.websocket("/ws")
+@app.websocket("/robot_ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        try:
+    await manager.connect(websocket)
+    try:
+        while True:
             data = await websocket.receive_text()
-            request_json = json.loads(data)
-        except Exception as e:
-            await websocket.send_text(f"Error processing request: {e}")
-            continue
-
-        match request_json["type"]:
-            case "package_processed":
-                try:
-                    handleProcessedPackage(request_json)
-                except Exception as e:
-                    await websocket.send_text(f"Error inserting in database: {e}")
-                    continue
-
-                await websocket.send_text("done")
+            try:
+                request_json = json.loads(data)
+            except Exception as e:
+                await manager.send_personal_message(f"Error processing request: {e}", websocket=websocket)
                 continue
+            ####################################### Robot Requests
+            match request_json["type"]:
+                case "identification":
+                    try:
+                        identity = request_json["identity"]
+                        manager.set_identity_for_ws(identity, websocket)
+                        await manager.send_personal_message(f"Identity set", websocket=websocket)
+                        continue
+                    except Exception as e:
+                        await manager.send_personal_message(f"Error setting identity {e}", websocket=websocket)
+                        continue
+                case "package_processed":
+                    try:
+                        handleProcessedPackage(request_json)
+                    except Exception as e:
+                        await manager.send_personal_message(f"Error inserting in database: {e}", websocket=websocket)
+                        continue
+                    frontend_ws = manager.get_ws_from_identity("frontend")
+                    # TODO: Send actual statistics
+                    await manager.send_personal_message(json.dumps(fake_statistics), websocket=frontend_ws)
+                    continue
+                case "arm_performance":
+                    try:
+                        # TODO: update real arm performance
+                        pass
+                    except Exception as e:
+                        await manager.send_personal_message(f"Error inserting in database: {e}", websocket=websocket)
+                        continue
+                        
+                    frontend_ws = manager.get_ws_from_identity("frontend")
+                    # TODO: Send actual statistics
+                    await manager.send_personal_message(json.dumps(fake_performance), websocket=frontend_ws)
+                    continue
+                ############################################ Frontend Requests
+                case "controls":
+                    try:
+                        # Simulate emergency stop
+                        await websocket.send_json(json.dumps({"status": "success"}))
+                    except Exception as e:
+                        await websocket.send_text(f"Error handling emergency stop: {e}")
+                        continue
+                    robot_ws = manager.get_ws_from_identity("robot")
+                    await manager.send_personal_message(json.dumps({"control_type": request_json["control_type"]}), websocket=robot_ws)
+                    continue
+                case _:
+                    await manager.send_personal_message(f"Request type {request_json["type"]} not recognized", websocket=websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket=websocket)
+
+
+
 
 
 fake_statistics = {
@@ -148,59 +192,20 @@ def handleRemoteControl(request_json):
     return {
         "status": "success"}
  
-
-@app.websocket("/dashboard_ws")
-async def dashboard_ws_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        try:
-            data = await websocket.receive_text()
-            request_json = json.loads(data)
-        except Exception as e:
-            await websocket.send_text(f"Error processing request: {e}")
-            continue
-
-        match request_json["type"]:
-            case "package_statistics":
-                try:
-                    res = handlePackageStatistics(request_json)
-                    await websocket.send_json(json.dumps(res))
-
-                except Exception as e:
-                    await websocket.send_text(f"Error handling package statistics: {e}")
-                    continue
-
-                continue
-            case "arm_performance":
-                try:
-                    res = handleArmPerformance(request_json)
-                    await websocket.send_json(json.dumps(res))
-
-                except Exception as e:
-                    await websocket.send_text(f"Error handling arm performance: {e}")
-                    continue
-
-                continue
-            case "remote_control_emergency_stop":
-                try:
-                    # Simulate emergency stop
-                    await websocket.send_json(json.dumps({"status": "success"}))
-                except Exception as e:
-                    await websocket.send_text(f"Error handling emergency stop: {e}")
-                    continue
-
-                continue
-            case "remote_control":
-                try:
-                    res = handleRemoteControl(request_json)
-                    await websocket.send_json(json.dumps(res))
-                except Exception as e:
-                    await websocket.send_text(f"Error handling arm performance: {e}")
-                    continue
-
-                continue
-
-
+#
+# @app.websocket("/dashboard_ws")
+# async def dashboard_ws_endpoint(websocket: WebSocket):
+#     await websocket.accept()
+#     while True:
+#         try:
+#             data = await websocket.receive_text()
+#             request_json = json.loads(data)
+#         except Exception as e:
+#             await websocket.send_text(f"Error processing request: {e}")
+#             continue
+#
+#         match request_json["type"]:
+#
 
 
 
