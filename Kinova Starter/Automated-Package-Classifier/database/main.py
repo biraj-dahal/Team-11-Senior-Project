@@ -106,7 +106,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         continue
                     frontend_ws = manager.get_ws_from_identity("frontend")
                     # TODO: Send actual statistics
-                    await manager.send_personal_message(json.dumps(fake_statistics), websocket=frontend_ws)
+                    await manager.send_personal_message(json.dumps({"type": "statistics", "payload": fake_statistics}), websocket=frontend_ws)
                     continue
                 case "arm_performance":
                     try:
@@ -118,7 +118,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         
                     frontend_ws = manager.get_ws_from_identity("frontend")
                     # TODO: Send actual statistics
-                    await manager.send_personal_message(json.dumps(fake_performance), websocket=frontend_ws)
+                    await manager.send_personal_message(json.dumps({"type": "arm_performance", "payload": fake_performance}), websocket=frontend_ws)
                     continue
                 ############################################ Frontend Requests
                 case "controls":
