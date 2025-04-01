@@ -3,42 +3,47 @@ import { LineChart, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer } f
 import { AlertCircle, Activity, Box, Power } from 'lucide-react';
 import Alert, { AlertDescription, AlertTitle } from '../components/Alert';
 import './RobotDashboard.css';
+import './ArmPerformance.css';
 import Navbar from '../components/Navbar';
 
 const RobotDashboard = () => {
-  const [status, setStatus] = useState(null);
+
+  // Status of connection to arm
+  const [connection_status, setConStatus] = useState("Offline");
+
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [error, setError] = useState(null);
+
+  const [message, setMessage] = useState(null);
+  const [ws, setWs] = useState(null);
   
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/ws');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setStatus(data);
-      setStatusHistory(prev => [...prev, { ...data, timestamp: new Date().toLocaleTimeString() }].slice(-20));
+
+    const socket = new WebSocket('ws://127.0.0.1:8000/dashboard_ws');
+    
+    socket.onopen = () => {
+      console.log('WebSocket connected!');
+      socket.send(JSON.stringify({ action: 'getData' }));
+      setConStatus('Online');
     };
-    ws.onerror = () => setError('WebSocket connection failed');
-    return () => ws.close();
-  }, []);
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [logsRes, statsRes] = await Promise.all([
-          fetch('http://localhost:8000/api/logs?limit=10'), 
-          fetch('http://localhost:8000/api/stats')
-        ]);
-        setLogs(await logsRes.json());
-        setStats(await statsRes.json());
-      } catch (err) {
-        setError('Failed to fetch data');
+
+    socket.onclose = () => {
+      console.log('WebSocket disconnected!');
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+    };
+
+    setWs(socket);
+
+    return () => {
+      if (socket) {
+        socket.close();
       }
     };
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -51,18 +56,16 @@ const RobotDashboard = () => {
       <div className="dashboard-grid">
         <div className="card status-card">
           <h2 className="card-title">Current Status</h2>
-          {status ? (
             <div className="status-content">
               <p className="status-item">
                 <Activity className="status-icon activity-icon" />
-                State: <span className="status-value">{status.state}</span>
+                State: <span className="status-value">{connection_status}</span>
               </p>
               <p className="status-item">
                 <Box className="status-icon position-icon" />
-                Position: <span className="status-value">{status.position}</span>
+                Position: <span className="status-value"></span>
               </p>
             </div>
-          ) : <p className="loading-text">Loading...</p>}
         </div>
 
         <div className="card stats-card">

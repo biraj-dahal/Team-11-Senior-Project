@@ -1,6 +1,6 @@
 .app-container {
   display: flex;
-  height: 100vh; /* Full height */
+  min-height: 100vh; /* Full height */
   width: 100vw; /* Full width */
 }
 
@@ -9,7 +9,7 @@
   width: 90%; /* Ensures the dashboard takes the remaining space */
   padding: 2rem;
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #8f97a1 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #bcc0c5 0%, #c3cfe2 100%);
   min-height: 100vh;
   overflow-x: hidden;
 }

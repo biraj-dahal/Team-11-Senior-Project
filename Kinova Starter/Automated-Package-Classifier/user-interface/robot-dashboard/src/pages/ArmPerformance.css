@@ -1,0 +1,56 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.container {
+    padding: 60px;
+    display: flex;
+    justify-content: space-between;
+}
+.status-section {
+    text-align: center;
+}
+.status-section h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #555;
+}
+.status {
+    font-size: 18px;
+    font-weight: bold;
+}
+.online { color: green; }
+.closed { color: red; }
+.statistics {
+    margin-top: 20px;
+}
+.statistics h3 {
+    background: #d3d3d3;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+.stats-table {
+    margin-top: 10px;
+}
+.stats-table p {
+    font-size: 16px;
+    color: #555;
+}
+.stats-value {
+    color: orange;
+    font-weight: bold;
+}
+.model-specs {
+    text-align: center;
+    background: #f0f0f0;
+    padding: 20px;
+    border-radius: 10px;
+}
+.gears-icon {
+    font-size: 30px;
+}
