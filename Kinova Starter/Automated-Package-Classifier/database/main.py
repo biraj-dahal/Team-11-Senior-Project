@@ -132,7 +132,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     await manager.send_personal_message(json.dumps({"control_type": request_json["control_type"]}), websocket=robot_ws)
                     continue
                 case _:
-                    await manager.send_personal_message(f"Request type {request_json["type"]} not recognized", websocket=websocket)
+                    await manager.send_personal_message(f"Request type {request_json['type']} not recognized", websocket=websocket)
     except WebSocketDisconnect:
         manager.disconnect(websocket=websocket)
 
