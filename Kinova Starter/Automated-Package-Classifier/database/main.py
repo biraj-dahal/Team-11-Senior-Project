@@ -5,7 +5,7 @@ from sqlite3 import Connection
 from contextlib import contextmanager
 import json
 from datetime import datetime
-from ConnectionManager import ConnectionManager
+from connection_manager import ConnectionManager
 
 
 def dict_factory(cursor, row):

@@ -1,10 +1,8 @@
-import asyncio
 import json
 from queue import Queue
 from threading import Thread, Event
 from robot import robot_script
-import websockets
-import time
+from thread_functions import communication_target, automatic_control_target, manual_control_target, emergency_stop_target
 
 datetime_format = "%Y-%m-%d %H:%M:%S"
 
@@ -14,44 +12,9 @@ message_queue = Queue()
 robot_thread = Thread(target=robot_script, args=(message_queue,))
 
 
+# If this is changed change thread_functions.py
 uri = "ws://localhost:8000/robot_ws"
 
-# Main thread/ Web Socket server
-async def communication_function(out_message_queue: Queue, stop_flag: Event):
-    first_contact = True
-    while not stop_flag.is_set():
-        async with websockets.connect(uri) as ws:
-            if first_contact:
-                await ws.send(json.dumps({
-                    "type": "identification",
-                    "identity": "robot"
-                }))
-                # will be identity saved. We can ignore this
-                message = await ws.recv()
-                print(message)
-                first_contact = False
-                continue
-            message = await ws.recv()
-            out_message_queue.put(message)
-
-def communication_target(out_message_queue: Queue, stop_flag):
-    asyncio.run(communication_function(out_message_queue, stop_flag))
-
-def automatic_control_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running automantic control")
-
-
-def manual_control_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running manual control")
-
-def emergency_stop_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running emergency stop")
 
 # Start the communication thread
 stop_flag = Event()
@@ -93,9 +56,6 @@ while True:
         automatic_control_stop_flag.set()
         manual_control_stop_flag.set()
         emergency_stop_flag.clear()   
-    else:
-        # TODO:: Throw an error if not recognized 
-        continue
 
     print(message)
 
