@@ -76,29 +76,28 @@ emergency_stop_thread = Thread(target=emergency_stop_target, args=(emergency_sto
 emergency_stop_thread.start()
 
 while True:
-    message = json.loads(message_queue.get())
-    match message["control_type"]:
-        case "manual_control":
+    data = message_queue.get()
+    message = json.loads(data)
+    control_type = message["control_type"]
+    if control_type == "manual_control":
         # TODO: stop the robot thread and start the emergency controls
-            automatic_control_stop_flag.set()
-            manual_control_stop_flag.clear()
-            emergency_stop_flag.set()
-        case "automatic_controls":
+        automatic_control_stop_flag.set()
+        manual_control_stop_flag.clear()
+        emergency_stop_flag.set()
+    elif control_type == "automatic_control":
         # TODO: stop any existing manual_control or emergency_stop threads and restart automatic control thread
-            automatic_control_stop_flag.clear()
-            manual_control_stop_flag.set()
-            emergency_stop_flag.set()
-        case "emergency_stop":
-        # TODO:: stop any existing manual_control and automatic control thread and initiate an emergency stop 
-            automatic_control_stop_flag.set()
-            manual_control_stop_flag.set()
-            emergency_stop_flag.clear()   
-        case _:
-        # TODO: error out saying noto recognized type
-         pass
+        automatic_control_stop_flag.clear()
+        manual_control_stop_flag.set()
+        emergency_stop_flag.set()
+    elif control_type == "emergency_stop":
+        automatic_control_stop_flag.set()
+        manual_control_stop_flag.set()
+        emergency_stop_flag.clear()   
+    else:
+        # TODO:: Throw an error if not recognized 
+        continue
 
     print(message)
-        # time.sleep(100)
 
 
 print(message)
