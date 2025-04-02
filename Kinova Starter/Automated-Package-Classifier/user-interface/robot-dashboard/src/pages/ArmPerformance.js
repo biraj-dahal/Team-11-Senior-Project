@@ -10,20 +10,24 @@ const ArmPerf = () => {
   const [statistics, setStatistics] = useState(null);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://127.0.0.1:8000/dashboard_ws");
+    const socket = new WebSocket("ws://127.0.0.1:8000/robot_ws");
 
     socket.onopen = () => {
       console.log("WebSocket connected!");
-      socket.send(JSON.stringify({ type: "arm_performance" }));
+      socket.send(JSON.stringify({ type: "identification", identity: "frontend" }));
     };
 
     socket.onmessage = (event) => {
       console.log(event.data)
-      const message = JSON.parse(JSON.parse(event.data));
-      setStatus(message.operational_status);
-      setGripperStatus(message.gripper_status);
-      setStatistics(message.live_statistics);
-      console.log(statistics);
+      if (event.data !== "Identification set") {
+        const message = JSON.parse(JSON.parse(event.data));
+        setStatus(message.operational_status);
+        setGripperStatus(message.gripper_status);
+        setStatistics(message.live_statistics);
+        console.log(statistics);
+      }
+    
+
     };
 
     socket.onclose = () => {
