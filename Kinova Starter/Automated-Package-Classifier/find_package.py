@@ -133,8 +133,7 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
                 robot.open_gripper_with_speed()
                 time.sleep(2)
 
-                pos = robot.go_to_automated_home()
-                logger.info(f"Is this home? {pos}")
+                robot.go_to_automated_home()
                 time.sleep(1)
                 if number_of_packages==1:
                     break

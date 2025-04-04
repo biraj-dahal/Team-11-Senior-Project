@@ -232,7 +232,6 @@ class Robot:
     def go_to_automated_home(self) -> bool:
         pos = self.pre_defined_positions.get_position("AUTOMATEDHOME").angles
         self.go_to_cartesian(pos)
-        return pos
 
     def move_to_home_position(self) -> bool:
 
