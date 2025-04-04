@@ -68,6 +68,11 @@ class DefinedPositions:
                 'QRSCAN',
                 'QR code scanning position (NU)'
             ),
+            'AUTOMATEDHOME': RobotPosition(
+                [0.411, 0, 0.535, 180, 0, 90],
+                'AUTOMATEDHOME',
+                'YOLO scanning position'
+            ),
             'HANDLE': RobotPosition(
                 [341.645, 54.046, 214.396, 285.337, 326.087, 303.654, 24.285],
                 'HANDLE',
@@ -243,6 +248,10 @@ class Robot:
         except Exception as e:
             self.logger.error(f"Error in angular movement: {e}")
             return False
+
+    def go_to_automated_home(self) -> bool:
+        pos = self.pre_defined_positions.get_position("AUTOMATEDHOME").angles
+        self.go_to_cartesian(pos)
 
     def move_to_home_position(self) -> bool:
 

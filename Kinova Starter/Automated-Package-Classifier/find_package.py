@@ -25,7 +25,7 @@ from PIL import Image
 import cv2
 import numpy as np
 
-MAX_X, MAX_Y = 900, 1000
+MAX_X, MAX_Y = 975, 1000
 
 def find_package(frame, model, min_confidence):
     """Locating the package to pick up"""
