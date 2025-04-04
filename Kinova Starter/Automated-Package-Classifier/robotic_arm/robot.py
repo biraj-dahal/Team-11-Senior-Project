@@ -44,22 +44,22 @@ class DefinedPositions:
     def __init__(self):
         self.positions = {
             'PERISHABLE': RobotPosition(
-                [292.318, 64.931, 178.571, 253.963, 36.948, 348.73, 344.96],
+                [233.076, 62.818, 208.56, 300.992, 328.957, 294.747, 348.297], # box 1
                 'PERISHABLE',
                 'Position for perishable items (W)'
             ),
             'HAZARDOUS': RobotPosition(
-                [165.682, 358.721, 174.79, 260.499, 64.21, 329.353, 43.232],
+                [273.054, 75.953, 207.013, 311.781, 326.391, 295.177, 348.8], # box2
                 'HAZARDOUS',
                 'Position for hazardous items (S)'
             ),
             'RETURN': RobotPosition(
-                [131.384, 34.513, 126.049, 232.762, 53.654, 316.227, 60.587],
+                [220.444, 81.122, 209.759, 347.953, 326.536, 273.377, 278.236], # box3
                 'RETURN',
                 'Position for return items (E)'
             ),
             'MAINCONVEYER': RobotPosition(
-                [345.845, 39.657, 192.208, 250.67, 345.695, 331.633, 97.461],
+                [343.095, 59.301, 212.683, 284.752, 323.777, 309.359, 25.482],
                 'MAINCONVEYER',
                 'Main conveyer position (ND)'
             ),
@@ -72,6 +72,26 @@ class DefinedPositions:
                 [0.411, 0, 0.535, 180, 0, 90],
                 'AUTOMATEDHOME',
                 'YOLO scanning position'
+            ),
+            'HANDLE': RobotPosition(
+                [341.645, 54.046, 214.396, 285.337, 326.087, 303.654, 24.285],
+                'HANDLE',
+                'Handle position (NU)'
+            ),
+            'SCAN_HANDLE': RobotPosition(
+                [348.526, 33.124, 199.572, 331.918, 348.663, 244.222, 89.568],
+                'SCAN_HANDLE',
+                'Scan handle position (NU)'
+            ),
+            'PERIS_HANDLE': RobotPosition(
+                [7.593, 35.262, 189.871, 243.091, 351.545, 335.521,106.426],
+                'PERIS_HANDLE',
+                'Perishable handle position (NU)'
+            ),
+            'SCAN_BOX': RobotPosition(
+                [239.149, 54.587, 210.973, 338.643, 331.151, 252.81, 336.53],
+                'SCAN_BOX',
+                'SCAN_BOX position'
             )
         }
 
@@ -346,11 +366,29 @@ class Robot:
             else:
                 target_pos = self.pre_defined_positions.get_position("RETURN")
 
-            # Move to the main conveyor and close the gripper
-            if not self.move_to_angle_config(self.pre_defined_positions.get_position("MAINCONVEYER").angles):
-                self.logger.error("Failed to move to main conveyor position")
+            if not self.move_to_angle_config(self.pre_defined_positions.get_position("SCAN_HANDLE").angles):
+                self.logger.error("Failed to move to Scan Handle position")
                 return False
             time.sleep(2)
+            
+            if package_type == "perishable":
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("PERIS_HANDLE").angles):
+                    self.logger.error("Failed to move to peris position")
+                    return False
+                time.sleep(2)
+
+            else:
+                # Move to the main conveyor and close the gripper
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("HANDLE").angles):
+                    self.logger.error("Failed to move to handle position")
+                    return False
+                time.sleep(2)
+                    
+
+                if not self.move_to_angle_config(self.pre_defined_positions.get_position("MAINCONVEYER").angles):
+                    self.logger.error("Failed to move to main conveyor position")
+                    return False
+                time.sleep(2)
 
             self.close_gripper_with_speed()
         
@@ -359,6 +397,11 @@ class Robot:
             if not self.move_to_home_position():
                 self.logger.error("Failed to return to home position")
                 return False
+            time.sleep(2)
+            
+            if not self.move_to_angle_config(self.pre_defined_positions.get_position("SCAN_BOX").angles):
+                    self.logger.error("Failed to scan box")
+                    return False
             time.sleep(2)
 
             if not self.move_to_angle_config(target_pos.angles):
