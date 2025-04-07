@@ -8,7 +8,7 @@ const RemoteControl = () => {
     245.84, 39.66, 100.21, 250.67, 345.7, 331.63, 97.46,
   ]);
   const [fingersValue, setFingersValue] = useState(100);
-  const [gripperOpen, setGripperOpen] = useState(true)
+  const [gripperOpen, setGripperOpen] = useState(true);
   const ws = useRef(null);
 
   const handleSliderChange = (index, value) => {
@@ -32,7 +32,7 @@ const RemoteControl = () => {
         gripper: gripperOpen ? "open" : "closed",
       };
 
-      console.log("sending message", message)
+      console.log("sending message", message);
       ws.current.send(JSON.stringify(message));
     }
   }, [gripperOpen, sliders, isManual]);
@@ -52,7 +52,6 @@ const RemoteControl = () => {
       }
     };
     ws.current.onclose = () => console.log("ws closed");
-
   }, []);
 
   return (
@@ -89,7 +88,7 @@ const RemoteControl = () => {
                   ))}
                 </div>
 
-                <div className="fingers-control">
+                {/* <div className="fingers-control">
                   <label className="switch-label">Grippers</label>
                   <label className="switch">
                     <input
@@ -105,7 +104,7 @@ const RemoteControl = () => {
                   <div className="grip-indicator">
                     {gripperOpen  ? "Open" : "Closed"}
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

@@ -140,6 +140,7 @@
   .switch-label {
     font-weight: 600;
     margin-bottom: 0.5rem;
+    color: #ffffff;
   }
   
   /* Toggle switch wrapper */
@@ -184,7 +185,7 @@
   
   /* Checked state */
   .switch input:checked + .slider-switch {
-    background-color: #3b82f6;
+    background-color: #89b1f2;
   }
   
   .switch input:checked + .slider-switch:before {
@@ -241,9 +242,9 @@
   
   .mode-label {
     font-weight: 600;
-    color: #1f2937;
+    color: #ffffff;
   }
-  
+   
 
   
   /* Hello */
