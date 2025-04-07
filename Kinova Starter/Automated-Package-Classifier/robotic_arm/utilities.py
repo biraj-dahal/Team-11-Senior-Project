@@ -32,7 +32,7 @@ config = load_config()
 logger.info("Loaded configuration file.")
 
 def parseConnectionArguments(parser = argparse.ArgumentParser()):
-    parser.add_argument("--ip", type=str, help="IP address of destination", default=config.get("local_robot_ip", "10.0.0.222"))
+    parser.add_argument("--ip", type=str, help="IP address of destination", default=config.get("local_robot_ip", "10.42.0.144"))
     parser.add_argument("-u", "--username", type=str, help="Username to login", default=config.get("user_login", "admin"))
     parser.add_argument("-p", "--password", type=str, help="Password to login", default=config.get("user_password", "admin"))
     return parser.parse_args()

@@ -5,7 +5,51 @@ from sqlite3 import Connection
 from contextlib import contextmanager
 import json
 from datetime import datetime
-from connection_manager import ConnectionManager
+import os
+# from connection_manager import ConnectionManager
+
+
+from fastapi import WebSocket
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+        self.ws_identity_index: dict = {}
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    def get_websocket_index(self, websocket: WebSocket):
+        return self.active_connections.index(websocket)
+
+    def get_other_ws(self, websocket: WebSocket):
+        for ws in self.active_connections:
+            if ws != websocket:
+                return ws
+
+    def get_ws_from_identity(self, identity: str):
+        # TODO: Will give error if identity has not been set
+        index = self.ws_identity_index[identity]
+        return self.active_connections[index]
+
+    def set_identity_for_ws(self, identity: str, websocket: WebSocket):
+        index = self.get_websocket_index(websocket)
+        self.ws_identity_index[identity] = index 
+
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
 
 
 def dict_factory(cursor, row):
@@ -17,6 +61,7 @@ def dict_factory(cursor, row):
 
 # App setup
 app = FastAPI()
+print(os.system("pwd"))
 conn = sqlite3.connect("./data/database")
 conn.row_factory = dict_factory
 datetime_format = "%Y-%m-%d %H:%M:%S"
@@ -129,7 +174,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         await websocket.send_text(f"Error handling emergency stop: {e}")
                         continue
                     robot_ws = manager.get_ws_from_identity("robot")
-                    await manager.send_personal_message(json.dumps({"control_type": request_json["control_type"]}), websocket=robot_ws)
+                    await manager.send_personal_message(json.dumps({"control_type": request_json["control_type"], "control": request_json["control"]}), websocket=robot_ws)
                     continue
                 case _:
                     await manager.send_personal_message(f"Request type {request_json['type']} not recognized", websocket=websocket)
