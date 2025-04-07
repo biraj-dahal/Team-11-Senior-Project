@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import "./RobotDashboard.css";
 import "./RemoteControl.css";
 import Navbar from "../components/Navbar";
-
+// HEllow ord
 const RemoteControl = () => {
   const [sliders, setSliders] = useState([
     245.84, 39.66, 100.21, 250.67, 345.7, 331.63, 97.46,
