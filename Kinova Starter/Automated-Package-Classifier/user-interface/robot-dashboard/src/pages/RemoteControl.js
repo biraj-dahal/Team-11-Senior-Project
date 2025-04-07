@@ -20,16 +20,20 @@ const RemoteControl = () => {
   const isManual = mode === "automatic";
 
   useEffect(() => {
-    const control_type = "autotmatic_control" ? !isManual : "manual_control";
-    const control = sliders;
-    const gripper = "open" ? fingersValue === 100 : "closed";
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      const control_type = isManual ? "manual_control" : "automatic_control";
+      const control = sliders;
+      const gripper = fingersValue === 100 ? "open" : "closed";
 
-    ws.current.send({
-      type: "controls",
-      control_type,
-      control,
-      gripper,
-    });
+      const message = {
+        type: "controls",
+        control_type,
+        control,
+        gripper,
+      };
+
+      ws.current.send(JSON.stringify(message));
+    }
   }, [fingersValue, sliders, isManual]);
 
   useEffect(() => {
