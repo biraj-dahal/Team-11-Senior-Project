@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import json
 from datetime import datetime
 import os
+
 # from connection_manager import ConnectionManager
 
 
@@ -39,8 +40,7 @@ class ConnectionManager:
 
     def set_identity_for_ws(self, identity: str, websocket: WebSocket):
         index = self.get_websocket_index(websocket)
-        self.ws_identity_index[identity] = index 
-
+        self.ws_identity_index[identity] = index
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
@@ -48,8 +48,6 @@ class ConnectionManager:
     async def broadcast(self, message: str):
         for connection in self.active_connections:
             await connection.send_text(message)
-
-
 
 
 def dict_factory(cursor, row):
@@ -119,7 +117,9 @@ def handleProcessedPackage(request_json):
     with query_db(conn, query, params) as _:
         pass
 
+
 manager = ConnectionManager()
+
 
 @app.websocket("/robot_ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -130,7 +130,9 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 request_json = json.loads(data)
             except Exception as e:
-                await manager.send_personal_message(f"Error processing request: {e}", websocket=websocket)
+                await manager.send_personal_message(
+                    f"Error processing request: {e}", websocket=websocket
+                )
                 continue
             ####################################### Robot Requests
             match request_json["type"]:
@@ -138,32 +140,48 @@ async def websocket_endpoint(websocket: WebSocket):
                     try:
                         identity = request_json["identity"]
                         manager.set_identity_for_ws(identity, websocket)
-                        await manager.send_personal_message(f"Identity set", websocket=websocket)
+                        await manager.send_personal_message(
+                            f"Identity set", websocket=websocket
+                        )
                         continue
                     except Exception as e:
-                        await manager.send_personal_message(f"Error setting identity {e}", websocket=websocket)
+                        await manager.send_personal_message(
+                            f"Error setting identity {e}", websocket=websocket
+                        )
                         continue
                 case "package_processed":
                     try:
                         handleProcessedPackage(request_json)
                     except Exception as e:
-                        await manager.send_personal_message(f"Error inserting in database: {e}", websocket=websocket)
+                        await manager.send_personal_message(
+                            f"Error inserting in database: {e}", websocket=websocket
+                        )
                         continue
                     frontend_ws = manager.get_ws_from_identity("frontend")
                     # TODO: Send actual statistics
-                    await manager.send_personal_message(json.dumps({"type": "statistics", "payload": fake_statistics}), websocket=frontend_ws)
+                    await manager.send_personal_message(
+                        json.dumps({"type": "statistics", "payload": fake_statistics}),
+                        websocket=frontend_ws,
+                    )
                     continue
                 case "arm_performance":
                     try:
                         # TODO: update real arm performance
                         pass
                     except Exception as e:
-                        await manager.send_personal_message(f"Error inserting in database: {e}", websocket=websocket)
+                        await manager.send_personal_message(
+                            f"Error inserting in database: {e}", websocket=websocket
+                        )
                         continue
-                        
+
                     frontend_ws = manager.get_ws_from_identity("frontend")
                     # TODO: Send actual statistics
-                    await manager.send_personal_message(json.dumps({"type": "arm_performance", "payload": fake_performance}), websocket=frontend_ws)
+                    await manager.send_personal_message(
+                        json.dumps(
+                            {"type": "arm_performance", "payload": fake_performance}
+                        ),
+                        websocket=frontend_ws,
+                    )
                     continue
                 ############################################ Frontend Requests
                 case "controls":
@@ -174,15 +192,23 @@ async def websocket_endpoint(websocket: WebSocket):
                         await websocket.send_text(f"Error handling emergency stop: {e}")
                         continue
                     robot_ws = manager.get_ws_from_identity("robot")
-                    await manager.send_personal_message(json.dumps({"control_type": request_json["control_type"], "control": request_json["control"]}), websocket=robot_ws)
+                    await manager.send_personal_message(
+                        json.dumps(
+                            {
+                                "control_type": request_json["control_type"],
+                                "control": request_json["control"],
+                            }
+                        ),
+                        websocket=robot_ws,
+                    )
                     continue
                 case _:
-                    await manager.send_personal_message(f"Request type {request_json['type']} not recognized", websocket=websocket)
+                    await manager.send_personal_message(
+                        f"Request type {request_json['type']} not recognized",
+                        websocket=websocket,
+                    )
     except WebSocketDisconnect:
         manager.disconnect(websocket=websocket)
-
-
-
 
 
 fake_statistics = {
@@ -195,7 +221,7 @@ fake_statistics = {
         "error_message": None,
         "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
     },
-datetime(2023, 11, 1, 12, 0).strftime(datetime_format): {
+    datetime(2023, 11, 1, 12, 0).strftime(datetime_format): {
         "id": 2,
         "perishable": True,
         "hazardous": False,
@@ -204,7 +230,7 @@ datetime(2023, 11, 1, 12, 0).strftime(datetime_format): {
         "error_message": None,
         "processed_datetime": datetime(2023, 10, 1, 12, 0).strftime(datetime_format),
     },
-datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
+    datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
         "id": 3,
         "perishable": True,
         "hazardous": False,
@@ -218,7 +244,7 @@ datetime(2023, 12, 1, 12, 0).strftime(datetime_format): {
 fake_performance = {
     "operational_status": "processing",
     "gripper_status": "closed",
-    "live_statistics": {    
+    "live_statistics": {
         "power_consumption": "100 W",
         "current_load": "100 gm",
         "x_alignment": 0.01,
@@ -226,19 +252,18 @@ fake_performance = {
     },
 }
 
+
 def handlePackageStatistics(request_json):
     return fake_statistics
-    
+
+
 def handleArmPerformance(request_json):
     return fake_performance
 
+
 def handleRemoteControl(request_json):
     print(request_json["servo_control"])
-    return {
-        "status": "success"}
- 
-
-
+    return {"status": "success"}
 
 
 @app.get("/processed_packages")
