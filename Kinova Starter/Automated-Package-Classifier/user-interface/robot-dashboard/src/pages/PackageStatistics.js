@@ -15,11 +15,11 @@ import {
 } from "recharts";
 
 const barData = [
-  { name: "December 29", value: 30 },
-  { name: "December 30", value: 50 },
-  { name: "December 31", value: 60 },
-  { name: "January 1", value: 40 },
-  { name: "January 2", value: 70 },
+  { name: "April 1", value: 30 },
+  { name: "April 2", value: 50 },
+  { name: "April 3", value: 60 },
+  { name: "April 4", value: 40 },
+  { name: "April 5", value: 70 },
 ];
 
 const lineData = [
@@ -78,10 +78,11 @@ const PackageStats = () => {
     <div className="app-container">
       <Navbar />
       <div className="dashboard-container">
-        <h1 className="dashboard-title">Package Statistics</h1>
-        <div className="chart-container">
-          <div className="bar-chart">
-            <h3>Packages Processed</h3>
+        <h1 className="dashboard-title-vert">Package Statistics</h1>
+        <div className="dashboard-grid-vert">
+          {/* Bar Chart Card */}
+          <div className="card">
+            <h3 className="card-title">Packages Processed (Monthly)</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={barData}>
                 <XAxis dataKey="name" />
@@ -92,8 +93,9 @@ const PackageStats = () => {
             </ResponsiveContainer>
           </div>
 
-          <div className="line-chart">
-            <h3>Packages Processed</h3>
+          {/* Line Chart Card */}
+          <div className="card">
+            <h3 className="card-title">Package Processing Details</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={lineData}>
                 <CartesianGrid strokeDasharray="3 3" />

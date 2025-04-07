@@ -2,6 +2,8 @@
   display: flex;
   min-height: 100vh; /* Full height */
   width: 100vw; /* Full width */
+  overflow-y: auto; /* ✅ This allows scrolling if content overflows */
+
 }
 
 .dashboard-container {
@@ -20,6 +22,7 @@
     color: #1f2937;
     margin-bottom: 2rem;
     text-align: center;
+    padding-top: 25px;
   }
   
   .dashboard-grid {
@@ -185,3 +188,17 @@
   }
 
   
+  .dashboard-grid-vert {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    gap: 1rem;              /* Space between cards */
+  }
+
+  .dashboard-title-vert {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 2rem;
+    text-align: center;
+    padding-top: 80px;
+  }
