@@ -18,8 +18,8 @@ communcation_thread.start()
 
 # Run the automatic control thread by default
 automatic_control_stop_flag = Event()
+automatic_control_stop_flag.set()
 automatic_control_thread = Thread(target=automatic_control_target, args=(automatic_control_stop_flag,))
-automatic_control_thread.start()
 
 # Start the manual control thread
 manual_control_stop_flag = Event()
@@ -33,8 +33,10 @@ emergency_stop_flag.set()
 emergency_stop_thread = Thread(target=emergency_stop_target, args=(emergency_stop_flag,))
 
 while True:
+    print("waiting for message")
     data = message_queue.get()
     message = json.loads(data)
+    print("Message recieved", message)
     control_type = message["control_type"]
     if control_type == "manual_control":
         # TODO: stop the robot thread and start the emergency controls
@@ -56,9 +58,8 @@ while True:
         manual_control_thread.start()
 
         # Send the input
-        print(message)
-        servo_config = message["control"]
-        manual_control_message_queue.put(servo_config)
+        print("sending message to manual thread", message)
+        manual_control_message_queue.put(message)
     elif control_type == "automatic_control":
         # TODO: stop any existing manual_control or emergency_stop threads and restart automatic control thread
         manual_control_stop_flag.set()
@@ -68,8 +69,10 @@ while True:
         # Join the threads to main thread
         if manual_control_thread.is_alive():
             manual_control_thread.join()
+        print("joined")
         if emergency_stop_thread.is_alive():
             emergency_stop_thread.join()
+        print("joined to automatic control")
 
 
         # Start the automatic control thread

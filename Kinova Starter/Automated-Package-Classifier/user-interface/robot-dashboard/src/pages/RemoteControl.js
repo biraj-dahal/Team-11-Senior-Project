@@ -8,6 +8,7 @@ const RemoteControl = () => {
     245.84, 39.66, 100.21, 250.67, 345.7, 331.63, 97.46,
   ]);
   const [fingersValue, setFingersValue] = useState(100);
+  const [gripperOpen, setGripperOpen] = useState(true)
   const ws = useRef(null);
 
   const handleSliderChange = (index, value) => {
@@ -17,24 +18,24 @@ const RemoteControl = () => {
   };
 
   const [mode, setMode] = useState("automatic");
-  const isManual = mode === "automatic";
+  const isManual = mode !== "automatic";
 
   useEffect(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       const control_type = isManual ? "manual_control" : "automatic_control";
       const control = sliders;
-      const gripper = fingersValue === 100 ? "open" : "closed";
 
       const message = {
         type: "controls",
         control_type,
         control,
-        gripper,
+        gripper: gripperOpen ? "open" : "closed",
       };
 
+      console.log("sending message", message)
       ws.current.send(JSON.stringify(message));
     }
-  }, [fingersValue, sliders, isManual]);
+  }, [gripperOpen, sliders, isManual]);
 
   useEffect(() => {
     ws.current = new WebSocket("ws://localhost:8000/robot_ws");
@@ -52,9 +53,6 @@ const RemoteControl = () => {
     };
     ws.current.onclose = () => console.log("ws closed");
 
-    return () => {
-      ws.current.close();
-    };
   }, []);
 
   return (
@@ -75,7 +73,7 @@ const RemoteControl = () => {
                         className="slider-value"
                         value={val.toFixed(2)}
                         onChange={(e) => handleSliderChange(i, e.target.value)}
-                        disabled={isManual}
+                        disabled={!isManual}
                       />
                       <input
                         type="range"
@@ -85,7 +83,7 @@ const RemoteControl = () => {
                         value={val}
                         onChange={(e) => handleSliderChange(i, e.target.value)}
                         className="vertical-slider"
-                        disabled={isManual}
+                        disabled={!isManual}
                       />
                     </div>
                   ))}
@@ -96,16 +94,16 @@ const RemoteControl = () => {
                   <label className="switch">
                     <input
                       type="checkbox"
-                      checked={fingersValue === 100}
+                      checked={gripperOpen}
                       onChange={(e) =>
-                        setFingersValue(e.target.checked ? 100 : 0)
+                        setGripperOpen(e.target.checked)
                       }
-                      disabled={isManual}
+                      disabled={!isManual}
                     />
                     <span className="slider-switch"></span>
                   </label>
                   <div className="grip-indicator">
-                    {fingersValue === 100 ? "Closed" : "Open"}
+                    {gripperOpen  ? "Open" : "Closed"}
                   </div>
                 </div>
               </div>

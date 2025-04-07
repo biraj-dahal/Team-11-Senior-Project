@@ -2,51 +2,13 @@ import React, { useState, useEffect } from "react";
 import "./RobotDashboard.css";
 import Navbar from "../components/Navbar";
 import logo from "../assets/kinova_arm.jpeg";
-import { useWebSocket } from "../components/WebSocketProvider";
 
 const ArmPerf = () => {
-  const socket = useWebSocket(); // Get WebSocket instance from context
   const [status, setStatus] = useState("Offline");
   const [gripperStatus, setGripperStatus] = useState("Unknown");
   const [statistics, setStatistics] = useState(null);
 
-  useEffect(() => {
-    if (!socket) {
-      console.log("Error socket is nil!");
-      return;
-    }
-
-    // const sendIdentification = () => {
-    //   if (socket.readyState === WebSocket.OPEN) {
-    //     socket.send(JSON.stringify({ type: "arm_performance" }));
-    //     console.log("Request sent for performance data. Awaiting response.");
-    //   }
-    // };
-
-    const handleMessage = (event) => {
-      console.log("WebSocket Message:", event.data);
-      if (event.data !== "Identity set") {
-        try {
-          const message = JSON.parse(JSON.parse(event.data));
-          setStatus(message.operational_status);
-          setGripperStatus(message.gripper_status);
-          setStatistics(message.live_statistics);
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      }
-    };
-
-    // socket.addEventListener("open", sendIdentification);
-    // socket.addEventListener("message", handleMessage);
-
-    return () => {
-      // socket.removeEventListener("open", sendIdentification);
-      // socket.removeEventListener("message", handleMessage);
-    };
-  }, [socket]);
-
-  return (
+    return (
     <div className="app-container">
       <Navbar />
       <div className="dashboard-container">

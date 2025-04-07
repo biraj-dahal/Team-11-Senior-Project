@@ -5,11 +5,9 @@ import LiveCamera from "./pages/LiveCamera";
 import PackageStats from "./pages/PackageStatistics";
 import RemoteControl from "./pages/RemoteControl";
 import Dash from "./pages/RobotDashboard";
-import { WebSocketProvider } from "./components/WebSocketProvider";
 
 function App() {
   return (
-    <WebSocketProvider>
       <Routes>
         <Route path="/" element={<Dash />} />
         <Route path="/armperformance" element={<ArmPerf />} />
@@ -18,7 +16,6 @@ function App() {
         <Route path="/packagestats" element={<PackageStats />} />
         <Route path="/remotecontrol" element={<RemoteControl />} />
       </Routes>
-    </WebSocketProvider>
   );
 }
 

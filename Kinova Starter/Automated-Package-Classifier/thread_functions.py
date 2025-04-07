@@ -7,11 +7,14 @@ from robot_server import automatic_control_function
 from robotic_arm.robot import Robot
 from robotic_arm import utilities
 import argparse
+import time
 
 parser = argparse.ArgumentParser()
 args = utilities.parseConnectionArguments(parser)
 # if this is changed change client_websocket.py
 uri = "ws://localhost:8000/robot_ws"
+
+prev_gripper = "open"
 
 # Main thread/ Web Socket server
 async def communication_function(out_message_queue: Queue, stop_flag: Event):
@@ -43,21 +46,31 @@ def manual_control_target(stop_flag: Event, message_queue: Queue):
     while not stop_flag.is_set():
         print(stop_flag.is_set())
         if stop_flag.is_set():
-            break
+            return
         message = message_queue.get()
+        print("Manual control message", message)
+        if type(message) is str:
+            print("Recieve string", message)
+            return
         servo_config = message["control"]
-        gripper_state = message["gripper"]
+        gripper_state = message["gripper"]   
+
         with utilities.DeviceConnection.createTcpConnection(args) as router:
             robot = Robot(router)
             if stop_flag.is_set():
-                break
+                return
+
             robot.move_to_angle_config(servo_config)
-            if gripper_state == "open":
-                robot.open_gripper_with_speed()
-            else:
-                robot.close_gripper_with_speed()
+            # if prev_gripper == gripper_state:
+            #     break
+            # time.sleep(2)
+            # if gripper_state == "open":
+            #     robot.open_gripper_with_speed()
+            # else:
+            #     robot.close_gripper_with_speed()
 
     print("finished manual control thread")
+    return
 
 def emergency_stop_target(stop_flag: Event):
     while stop_flag.is_set():

@@ -127,6 +127,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
+            print(data)
             try:
                 request_json = json.loads(data)
             except Exception as e:
@@ -194,10 +195,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     robot_ws = manager.get_ws_from_identity("robot")
                     await manager.send_personal_message(
                         json.dumps(
-                            {
-                                "control_type": request_json["control_type"],
-                                "control": request_json["control"],
-                            }
+                            request_json
+
                         ),
                         websocket=robot_ws,
                     )
