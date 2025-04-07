@@ -3,8 +3,13 @@ from threading import Event
 import asyncio
 import json
 import websockets
+from read_pickup_drop import automatic_control_function
+from robotic_arm.robot import Robot
+from robotic_arm import utilities
+import argparse
 
-
+parser = argparse.ArgumentParser()
+args = utilities.parseConnectionArguments(parser)
 # if this is changed change client_websocket.py
 uri = "ws://localhost:8000/robot_ws"
 
@@ -30,17 +35,26 @@ def communication_target(out_message_queue: Queue, stop_flag):
     asyncio.run(communication_function(out_message_queue, stop_flag))
 
 def automatic_control_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running automantic control")
+    while not stop_flag.is_set():
+        automatic_control_function(stop_flag)
 
-
-def manual_control_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running manual control")
+def manual_control_target(stop_flag: Event, message_queue: Queue):
+    print("manual_thread")
+    while not stop_flag.is_set():
+        if stop_flag.is_set():
+            break
+        servo_config = message_queue.get()
+        with utilities.DeviceConnection.createTcpConnection(args) as router:
+            robot = Robot(router)
+            if stop_flag.is_set():
+                break
+            robot.move_to_angle_config(servo_config)
+            # print("running manual control")
 
 def emergency_stop_target(stop_flag: Event):
-    while True:
-        if not stop_flag.is_set():
-            print("running emergency stop")
+    while stop_flag.is_set():
+        with utilities.DeviceConnection.createTcpConnection(args) as router:
+            robot = Robot(router)
+            if stop_flag.is_set():
+                break
+            robot.open_gripper_with_speed()
