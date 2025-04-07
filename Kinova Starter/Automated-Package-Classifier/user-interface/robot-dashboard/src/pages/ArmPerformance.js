@@ -12,22 +12,20 @@ const ArmPerf = () => {
     <div className="app-container">
       <Navbar />
       <div className="dashboard-container">
-        <h1 className="dashboard-title">Arm Performance</h1>
+        <h1 className="dashboard-title-vert">Arm Performance</h1>
         <div className="dashboard-grid">
           <div className="card status-card">
             <div className="container">
               <div className="status-section">
                 <div>
                   <h2>
-                    Operational Status:{" "}
-                    <span className="status online">
-                      {status ?? "Loading..."}
-                    </span>
+                    Operational Status:{""}
+                    <span className="status online">{status ?? "Online"}</span>
                   </h2>
                   <h2>
                     Gripper Status:{" "}
                     <span className="status closed">
-                      {gripperStatus ?? "Loading..."}
+                      {gripperStatus ?? "Open"}
                     </span>
                   </h2>
                   <div className="statistics">
@@ -36,25 +34,25 @@ const ArmPerf = () => {
                       <p>
                         Power Consumption:{" "}
                         <span className="stats-value">
-                          {statistics?.power_consumption ?? "Loading..."}
+                          {statistics?.power_consumption ?? "63W"}
                         </span>
                       </p>
                       <p>
                         Current Load:{" "}
                         <span className="stats-value">
-                          {statistics?.current_load ?? "Loading..."}
+                          {statistics?.current_load ?? "570g"}
                         </span>
                       </p>
                       <p>
                         X alignment:{" "}
                         <span className="stats-value">
-                          {statistics?.x_alignment ?? "Loading..."}
+                          {statistics?.x_alignment ?? "350"}
                         </span>
                       </p>
                       <p>
                         Y alignment:{" "}
                         <span className="stats-value">
-                          {statistics?.y_alignment ?? "Loading..."}
+                          {statistics?.y_alignment ?? "275"}
                         </span>
                       </p>
                     </div>

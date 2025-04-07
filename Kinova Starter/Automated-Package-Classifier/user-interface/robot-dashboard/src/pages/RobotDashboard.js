@@ -35,20 +35,59 @@ const RobotDashboard = () => {
       setConStatus("Online");
     };
 
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setStats(data.stats);
+      setStatusHistory(data.statusHistory);
+      setLogs(data.logs);
+    };
+
     socket.onclose = () => {
       console.log("WebSocket disconnected!");
     };
 
     socket.onerror = (error) => {
       console.error("WebSocket Error:", error);
+      setError("Unable to connect to the robot.");
     };
+
+    // Fallback / dummy data
+    setStats({
+      cpu_usage: 37,
+      memory_usage: 62,
+      active_connections: 3,
+    });
+
+    setStatusHistory([
+      { timestamp: "14:00", cpu_usage: 28, memory_usage: 45 },
+      { timestamp: "14:05", cpu_usage: 35, memory_usage: 50 },
+      { timestamp: "14:10", cpu_usage: 40, memory_usage: 55 },
+      { timestamp: "14:15", cpu_usage: 38, memory_usage: 60 },
+      { timestamp: "14:20", cpu_usage: 37, memory_usage: 62 },
+    ]);
+
+    setLogs([
+      {
+        level: "Info",
+        message: "System boot complete. Awaiting commands.",
+        timestamp: Date.now() - 60000,
+      },
+      {
+        level: "Warning",
+        message: "Joint 2 reported minor calibration drift.",
+        timestamp: Date.now() - 30000,
+      },
+      {
+        level: "Error",
+        message: "Gripper force sensor unresponsive.",
+        timestamp: Date.now(),
+      },
+    ]);
 
     setWs(socket);
 
     return () => {
-      if (socket) {
-        socket.close();
-      }
+      if (socket) socket.close();
     };
   }, []);
 
@@ -56,7 +95,7 @@ const RobotDashboard = () => {
     <div className="app-container">
       <Navbar />
       <div className="dashboard-container">
-        <h1 className="dashboard-title-vert">Dashboard</h1>
+        <h1 className="dashboard-title-vert-2">Dashboard</h1>
 
         <div className="dashboard-grid">
           <div className="card status-card">
@@ -64,11 +103,12 @@ const RobotDashboard = () => {
             <div className="status-content">
               <p className="status-item">
                 <Activity className="status-icon activity-icon" />
-                State: <span className="status-value">{connection_status}</span>
+                State: <span className="status-value">Online</span>
               </p>
               <p className="status-item">
                 <Box className="status-icon position-icon" />
-                Position: <span className="status-value"></span>
+                Gripper Status: Operational
+                <span className="status-value"></span>
               </p>
             </div>
           </div>
@@ -155,19 +195,6 @@ const RobotDashboard = () => {
             ))}
           </div>
         </div>
-
-        <button className="stop-button">
-          <Power className="button-icon" />
-          STOP
-        </button>
-
-        {error && (
-          <Alert className="error-alert">
-            <AlertCircle className="error-icon" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
       </div>
     </div>
   );

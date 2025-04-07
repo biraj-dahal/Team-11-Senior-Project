@@ -83,12 +83,27 @@ const PackageStats = () => {
           {/* Bar Chart Card */}
           <div className="card">
             <h3 className="card-title">Packages Processed (Monthly)</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={barData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#4A90E2" />
+                <CartesianGrid
+                  stroke="rgba(36, 157, 105, 0.64)"
+                  strokeDasharray="3 3"
+                />
+                <XAxis dataKey="name" stroke="#ccc" />
+                <YAxis stroke="#ccc" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgb(0, 0, 0)",
+                    border: "1px solid rgb(255, 255, 255)",
+                    color: "rgba(255, 255, 255, 0.64)",
+                  }}
+                />
+                <Bar
+                  dataKey="value"
+                  fill="rgba(196, 114, 22, 0.71)" // default color
+                  radius={[10, 10, 0, 0]}
+                  activeBar={{ fill: "rgba(255, 160, 50, 0.9)" }} // hover color
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -96,7 +111,7 @@ const PackageStats = () => {
           {/* Line Chart Card */}
           <div className="card">
             <h3 className="card-title">Package Processing Details</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={lineData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="index" />
