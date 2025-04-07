@@ -5,7 +5,6 @@ from thread_functions import communication_target, automatic_control_target, man
 
 datetime_format = "%Y-%m-%d %H:%M:%S"
 
-
 message_queue = Queue()
 
 # If this is changed change thread_functions.py
