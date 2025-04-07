@@ -1,0 +1,68 @@
+/* Sidebar Navbar */
+.navbar {
+  width: 15%;
+  background-color: #262529;
+  color: #ffffff;
+  padding-top: 2rem;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  box-shadow: 4px 0 20px rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Logo */
+.logo {
+  width: 60%;
+  margin: 0 auto 1.75rem auto;
+  border-radius: 15%;
+  /* You can uncomment if you want a glow: */
+  /* box-shadow: 0 0 18px rgba(255, 255, 255, 0.15); */
+}
+
+/* Title */
+.title {
+  margin-bottom: 2rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Menu Items */
+.navbar .menu-item {
+  display: block;
+  width: 80%;
+  text-align: center;
+  padding: 0.85rem 1rem;
+  color: #ffffff;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.25s ease-in-out;
+  background: rgba(138, 23, 23, 0.03);
+}
+
+.navbar .menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+  transform: translateX(4px);
+}
+
+/* Active State */
+.navbar .menu-item.active {
+  background: linear-gradient(135deg, #ffffff, #dddddd);
+  color: #000000;
+  font-weight: 600;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
+  transform: translateX(6px);
+}

@@ -3,16 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@radix-ui/react-alert-dialog": "^1.1.6",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
-    "lucide-react": "^0.475.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "hls.js": "^1.6.0",
+    "lucide-react": "^0.485.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-pro-sidebar": "^1.1.0",
+    "react-router-dom": "^7.4.1",
     "react-scripts": "5.0.1",
     "recharts": "^2.15.1",
+    "router-dom": "^3.0.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

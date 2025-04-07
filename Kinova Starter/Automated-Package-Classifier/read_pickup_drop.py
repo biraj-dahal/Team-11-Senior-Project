@@ -20,6 +20,7 @@ def setup_logging():
 
 logger = setup_logging()
 
+print("args", args)
 with utilities.DeviceConnection.createTcpConnection(args) as router:
         robot = Robot(router)
         
@@ -82,5 +83,3 @@ with utilities.DeviceConnection.createTcpConnection(args) as router:
                 logger.info("Operation ended")
 
         
-
-
