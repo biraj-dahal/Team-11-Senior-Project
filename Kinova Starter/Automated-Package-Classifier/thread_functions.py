@@ -39,19 +39,23 @@ def automatic_control_target(stop_flag: Event):
         automatic_control_function(stop_flag)
 
 def manual_control_target(stop_flag: Event, message_queue: Queue):
-    print("manual_thread")
+    print("manual_thread started")
     while not stop_flag.is_set():
         print(stop_flag.is_set())
         if stop_flag.is_set():
             break
-        servo_config = message_queue.get()
+        message = message_queue.get()
+        servo_config = message["control"]
+        gripper_state = message["gripper"]
         with utilities.DeviceConnection.createTcpConnection(args) as router:
             robot = Robot(router)
             if stop_flag.is_set():
                 break
             robot.move_to_angle_config(servo_config)
-            print("running manual control")
-        print(stop_flag.is_set())
+            if gripper_state == "open":
+                robot.open_gripper_with_speed()
+            else:
+                robot.close_gripper_with_speed()
 
     print("finished manual control thread")
 
